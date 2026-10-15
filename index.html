@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <title>GestorFrota</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GestorFrota">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="GestorFrota">
+  <meta name="theme-color" content="#1d4ed8">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="assets/styles.css?v=1">
+  <script src="config.js?v=1"></script>
+  <script src="assets/api.js?v=1"></script>
+  <script src="assets/util.js?v=1"></script>
+  <script src="assets/ui.js?v=1"></script>
+  <script>document.addEventListener('DOMContentLoaded', iniciarPaginaLogin);</script>
+</head>
+<body>
+
+    <div class="tela-login">
+      <div class="card-login">
+        <div class="login-logo"><i data-lucide="truck"></i><span data-campo="nomeEmpresa">GestorFrota</span></div>
+        <h1>Entrar</h1>
+        <p id="login-aviso-sessao" class="login-aviso oculto"></p>
+
+        <div class="login-abas">
+          <button type="button" class="login-aba ativa" id="aba-login-motorista">Sou motorista</button>
+          <button type="button" class="login-aba" id="aba-login-gestor">Sou gestor</button>
+        </div>
+
+        <!-- Login do motorista: placa do caminhão + senha própria -->
+        <form id="form-login-motorista">
+          <div class="campo">
+            <label for="login-placa">Placa do caminhão</label>
+            <input type="text" id="login-placa" autocomplete="off" required style="text-transform:uppercase;">
+          </div>
+          <div class="campo">
+            <label for="login-senha-motorista">Sua senha</label>
+            <input type="password" id="login-senha-motorista" autocomplete="current-password" required>
+          </div>
+          <p id="login-motorista-mensagem-erro" class="login-aviso oculto"></p>
+          <button type="submit" class="btn btn-primario" style="width:100%;margin-top:6px;">Entrar</button>
+          <button type="button" id="btn-esqueci-senha" class="login-link">Esqueci minha senha</button>
+        </form>
+
+        <!-- Login do gestor: e-mail + senha (como já era) -->
+        <form id="form-login-gestor" class="oculto">
+          <div class="campo">
+            <label for="login-email">E-mail</label>
+            <input type="email" id="login-email" autocomplete="username" required>
+          </div>
+          <div class="campo">
+            <label for="login-senha">Senha</label>
+            <input type="password" id="login-senha" autocomplete="current-password" required>
+          </div>
+          <p id="login-mensagem-erro" class="login-aviso oculto"></p>
+          <button type="submit" class="btn btn-primario" style="width:100%;margin-top:6px;">Entrar</button>
+        </form>
+
+        <!-- Recuperação de senha do motorista: confirma identidade
+             com nome + data de nascimento (já cadastrados), sem
+             depender de link por e-mail. -->
+        <form id="form-recuperar-senha" class="oculto">
+          <p style="font-size:13px;color:var(--cor-texto-suave);margin-top:0;">Confirme seus dados cadastrados para criar uma nova senha.</p>
+          <div class="campo">
+            <label for="rec-email">Seu e-mail cadastrado</label>
+            <input type="email" id="rec-email" autocomplete="username" required>
+          </div>
+          <div class="campo">
+            <label for="rec-nome">Seu nome completo</label>
+            <input type="text" id="rec-nome" required>
+          </div>
+          <div class="campo">
+            <label for="rec-nascimento">Sua data de nascimento</label>
+            <input type="text" id="rec-nascimento" placeholder="dd/mm/aaaa" required>
+          </div>
+          <div class="campo">
+            <label for="rec-nova-senha">Nova senha (mín. 6 caracteres)</label>
+            <input type="password" id="rec-nova-senha" required>
+          </div>
+          <p id="rec-mensagem-erro" class="login-aviso oculto"></p>
+          <p id="rec-mensagem-sucesso" class="login-aviso oculto" style="color:var(--cor-sucesso);"></p>
+          <button type="submit" class="btn btn-primario" style="width:100%;margin-top:6px;">Redefinir senha</button>
+          <button type="button" id="btn-voltar-login" class="login-link">Voltar para o login</button>
+        </form>
+      </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <title>GestorFrota</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GestorFrota">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="GestorFrota">
+  <meta name="theme-color" content="#1d4ed8">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="assets/styles.css?v=1">
+  <script src="config.js?v=1"></script>
+  <script src="assets/api.js?v=1"></script>
+  <script src="assets/util.js?v=1"></script>
+  <script src="assets/ui.js?v=1"></script>
+  <script>
+    protegerPagina('MOTORISTA');
+    document.addEventListener('DOMContentLoaded', iniciarPaginaSistema);
+  </script>
+</head>
+<body>
+
+    <!-- ================= APLICAÇÃO PRINCIPAL ================= -->
+    <div id="app" class="app-shell" data-perfil="MOTORISTA">
+
+      <header class="topbar">
+        <button id="btn-toggle-menu" class="icon-btn only-mobile" aria-label="Abrir menu">
+          <i data-lucide="menu"></i>
+        </button>
+        <div class="topbar-titulo">
+          <i data-lucide="truck"></i>
+          <span data-campo="nomeEmpresa">GestorFrota</span>
+        </div>
+        <div class="topbar-usuario">
+          <button id="btn-tema" class="icon-btn" aria-label="Alternar tema">
+            <i data-lucide="moon"></i>
+          </button>
+          <div class="usuario-info">
+            <span class="usuario-nome" data-campo="usuarioNome"></span>
+            <span class="usuario-perfil" data-campo="usuarioPerfil"></span>
+          </div>
+          <button id="btn-sair" class="icon-btn" aria-label="Sair" title="Sair">
+            <i data-lucide="log-out"></i>
+          </button>
+        </div>
+      </header>
+
+      <div class="app-body">
+
+        <nav id="sidebar" class="sidebar">
+          <ul class="menu-lista">
+              <li><a href="#" class="menu-item ativo" data-secao="motorista"><i data-lucide="layout-dashboard"></i><span>Início</span></a></li>
+          </ul>
+        </nav>
+        <div id="overlay-sidebar" class="overlay-sidebar"></div>
+
+        <main class="conteudo">
+
+          <div id="loader-global" class="loader-global oculto">
+            <div class="spinner"></div>
+            <span>Carregando...</span>
+          </div>
+
+          <div id="toast-container" class="toast-container"></div>
+
+          <section id="secao-motorista" class="secao">
+<div class="painel-boas-vindas">
+  <h2 id="saudacao-motorista">Olá!</h2>
+  <p>O que você precisa registrar agora?</p>
+</div>
+
+<div class="grid-acoes-motorista">
+  <button class="btn-acao-motorista" id="btn-checklist-saida">
+    <i data-lucide="clipboard-check"></i>
+    <span>Checklist de saída</span>
+  </button>
+  <button class="btn-acao-motorista" id="btn-checklist-chegada">
+    <i data-lucide="clipboard-check"></i>
+    <span>Checklist de chegada</span>
+  </button>
+  <button class="btn-acao-motorista" id="btn-abastecimento">
+    <i data-lucide="fuel"></i>
+    <span>Registrar abastecimento</span>
+  </button>
+  <button class="btn-acao-motorista" id="btn-despesa">
+    <i data-lucide="receipt"></i>
+    <span>Registrar despesa</span>
+  </button>
+  <button class="btn-acao-motorista" id="btn-ocorrencia">
+    <i data-lucide="alert-triangle"></i>
+    <span>Registrar ocorrência</span>
+  </button>
+  <button class="btn-acao-motorista" id="btn-manutencao">
+    <i data-lucide="wrench"></i>
+    <span>Solicitar manutenção</span>
+  </button>
+  <button class="btn-acao-motorista" id="btn-minhas-viagens">
+    <i data-lucide="route"></i>
+    <span>Minhas viagens</span>
+  </button>
+  <button class="btn-acao-motorista" id="btn-jornada">
+    <i data-lucide="clock"></i>
+    <span id="label-btn-jornada">Iniciar jornada</span>
+  </button>
+</div>
+
+<div class="painel">
+  <h3>Meus últimos abastecimentos</h3>
+  <div id="lista-meus-abastecimentos"><p style="color:var(--cor-texto-suave);font-size:13px;">Carregando...</p></div>
+</div>
+
+<div class="painel">
+  <h3>Minhas últimas despesas</h3>
+  <div id="lista-minhas-despesas"><p style="color:var(--cor-texto-suave);font-size:13px;">Carregando...</p></div>
+</div>
+
+<div class="painel">
+  <h3>Meus últimos checklists</h3>
+  <div id="lista-meus-checklists"><p style="color:var(--cor-texto-suave);font-size:13px;">Carregando...</p></div>
+</div>
+
+<script>
+  registrarCarregadorSecao('motorista', carregarPainelMotorista);
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('btn-checklist-saida').addEventListener('click', function () { abrirFormularioChecklistMotorista('SAIDA'); });
+    document.getElementById('btn-checklist-chegada').addEventListener('click', function () { abrirFormularioChecklistMotorista('CHEGADA'); });
+    document.getElementById('btn-abastecimento').addEventListener('click', abrirFormularioAbastecimentoMotorista);
+    document.getElementById('btn-despesa').addEventListener('click', abrirFormularioDespesaMotorista);
+    document.getElementById('btn-ocorrencia').addEventListener('click', abrirFormularioOcorrenciaMotorista);
+    document.getElementById('btn-manutencao').addEventListener('click', abrirFormularioSolicitarManutencaoMotorista);
+    document.getElementById('btn-jornada').addEventListener('click', clicarBotaoJornada);
+    document.getElementById('btn-minhas-viagens').addEventListener('click', abrirModalMinhasViagens);
+  });
+
+  let jornadaAbertaAtual = null;
+
+  function atualizarEstadoBotaoJornada() {
+    executar('obterJornadaAbertaDoMotorista').then(function (jornada) {
+      jornadaAbertaAtual = jornada;
+      const label = document.getElementById('label-btn-jornada');
+      label.textContent = jornada ? 'Encerrar jornada' : 'Iniciar jornada';
+    });
+  }
+
+  function clicarBotaoJornada() {
+    if (jornadaAbertaAtual) {
+      abrirFormularioEncerrarJornada(jornadaAbertaAtual.idHoras);
+    } else {
+      abrirFormularioIniciarJornada();
+    }
+  }
+
+  function carregarPainelMotorista() {
+    carregarMeusAbastecimentos();
+    carregarMeusChecklists();
+    carregarMinhasDespesas();
+    atualizarEstadoBotaoJornada();
+  }
+
+  function carregarMeusAbastecimentos() {
+    executar('listarMeusAbastecimentos').then(function (lista) {
+      const container = document.getElementById('lista-meus-abastecimentos');
+      if (!lista || lista.length === 0) {
+        container.innerHTML = '<p style="color:var(--cor-texto-suave);font-size:13px;">Nenhum abastecimento registrado ainda.</p>';
+        return;
+      }
+      container.innerHTML = '<table class="tabela-simples"><tbody>' +
+        lista.map(function (a) {
+          const dataFmt = a.data ? new Date(a.data).toLocaleDateString('pt-BR') : '-';
+          return '<tr><td>' + dataFmt + '</td><td>' + a.placa + '</td><td>' + a.litros + ' L</td>' +
+            '<td>' + formatarMoedaFrontend(a.valorTotal) + '</td>' +
+            '<td><span class="badge ' + classeBadgeValidacaoMotorista(a.statusValidacao) + '">' + a.statusValidacao + '</span></td></tr>';
+        }).join('') +
+        '</tbody></table>';
+    });
+  }
+
+  function carregarMeusChecklists() {
+    executar('listarMeusChecklists').then(function (lista) {
+      const container = document.getElementById('lista-meus-checklists');
+      if (!lista || lista.length === 0) {
+        container.innerHTML = '<p style="color:var(--cor-texto-suave);font-size:13px;">Nenhum checklist registrado ainda.</p>';
+        return;
+      }
+      container.innerHTML = '<table class="tabela-simples"><tbody>' +
+        lista.map(function (c) {
+          const dataFmt = c.dataHora ? new Date(c.dataHora).toLocaleString('pt-BR') : '-';
+          return '<tr><td>' + dataFmt + '</td><td>' + c.placa + '</td><td>' + c.tipoChecklist + '</td>' +
+            '<td><span class="badge ' + classeBadgeValidacaoMotorista(c.status === 'OK' ? 'APROVADO' : (c.status === 'BLOQUEADO' ? 'REJEITADO' : 'PENDENTE')) + '">' + c.status.replace('_', ' ') + '</span></td></tr>';
+        }).join('') +
+        '</tbody></table>';
+    });
+  }
+
+  function classeBadgeValidacaoMotorista(status) {
+    if (status === 'APROVADO') return 'badge-sucesso';
+    if (status === 'REJEITADO') return 'badge-critico';
+    return 'badge-alerta';
+  }
+
+  function carregarMinhasDespesas() {
+    executar('listarMinhasDespesas').then(function (lista) {
+      const container = document.getElementById('lista-minhas-despesas');
+      if (!lista || lista.length === 0) {
+        container.innerHTML = '<p style="color:var(--cor-texto-suave);font-size:13px;">Nenhuma despesa registrada ainda.</p>';
+        return;
+      }
+      container.innerHTML = '<table class="tabela-simples"><tbody>' +
+        lista.map(function (d) {
+          const dataFmt = d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '-';
+          return '<tr><td>' + dataFmt + '</td><td>' + d.placa + '</td><td>' + d.categoria + '</td>' +
+            '<td>' + formatarMoedaFrontend(d.valor) + '</td>' +
+            '<td><span class="badge ' + classeBadgeValidacaoMotorista(d.statusValidacao) + '">' + d.statusValidacao + '</span></td></tr>';
+        }).join('') +
+        '</tbody></table>';
+    });
+  }
+
+  function abrirFormularioDespesaMotorista() {
+    Promise.all([
+      executar('listarVeiculosParaSelectSimples'),
+      executar('listarMinhasViagensAtivas')
+    ]).then(function (resultados) {
+      const veiculos = resultados[0];
+      const viagensAtivas = resultados[1];
+      const viagemEmAndamento = viagensAtivas.find(function (v) { return v.statusViagem === 'EM_ANDAMENTO'; });
+
+      const optionsVeiculos = veiculos.map(function (v) { return '<option value="' + v.idVeiculo + '">' + v.placa + '</option>'; }).join('');
+      const optionsCategoria = ['PEDAGIO', 'LAVAGEM', 'PATIO', 'DIARIA', 'OUTRA']
+        .map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join('');
+
+      const avisoViagem = viagemEmAndamento
+        ? '<p style="font-size:12px;color:var(--cor-texto-suave);grid-column:1/-1;margin:0;">Vinculada automaticamente à viagem ' + viagemEmAndamento.numeroViagem + ' em andamento.</p>'
+        : '';
+      const campoOrigemPagamento = viagemEmAndamento
+        ? '<div class="campo-full">' +
+            '<label style="font-size:12px;color:var(--cor-texto-suave);font-weight:600;">Você pagou isso com o repasse operacional que recebeu?</label>' +
+            '<div><label><input type="radio" name="dsm-origem-pagamento" value="true" checked> Sim, usei o repasse</label> &nbsp; ' +
+            '<label><input type="radio" name="dsm-origem-pagamento" value="false"> Não, foi outro dinheiro (do meu bolso ou outro)</label></div>' +
+          '</div>'
+        : '';
+
+      const html =
+        '<form id="form-despesa-motorista" class="form-grid">' +
+          campoSelect('Veículo *', 'dsm-idVeiculo', '<option value="">Selecione...</option>' + optionsVeiculos) +
+          campoData('Data', 'dsm-data', new Date()) +
+
+          campoSelect('Categoria *', 'dsm-categoria', optionsCategoria) +
+          campoNumero('Valor (R$) *', 'dsm-valor', '') +
+
+          campoTexto('Fornecedor', 'dsm-fornecedor', '') +
+          campoTexto('URL do comprovante (foto)', 'dsm-comprovanteUrl', '') +
+
+          campoTextarea('Descrição', 'dsm-descricao', '') +
+          avisoViagem +
+          campoOrigemPagamento +
+          '<div class="form-acoes">' +
+            '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+            '<button type="submit" class="btn btn-primario">Registrar despesa</button>' +
+          '</div>' +
+        '</form>';
+
+      const corpo = abrirModal('Registrar despesa', html);
+      corpo.querySelector('#form-despesa-motorista').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        const radioOrigem = corpo.querySelector('input[name="dsm-origem-pagamento"]:checked');
+        const dados = {
+          idVeiculo: document.getElementById('dsm-idVeiculo').value,
+          data: document.getElementById('dsm-data').value,
+          categoria: document.getElementById('dsm-categoria').value,
+          valor: document.getElementById('dsm-valor').value,
+          fornecedor: document.getElementById('dsm-fornecedor').value,
+          comprovanteUrl: document.getElementById('dsm-comprovanteUrl').value,
+          descricao: document.getElementById('dsm-descricao').value,
+          responsavelPagamento: 'DEDUZIR_RESULTADO',
+          idViagem: viagemEmAndamento ? viagemEmAndamento.idViagem : '',
+          pagoComRepasse: radioOrigem ? radioOrigem.value : false
+        };
+        executar('registrarDespesa', dados).then(function () {
+          mostrarToast('Despesa registrada! Aguardando aprovação do gestor.', 'sucesso');
+          fecharModal();
+          carregarMinhasDespesas();
+        });
+      });
+    });
+  }
+
+  /* ================= CHECKLIST (mobile-first) ================= */
+  function abrirFormularioChecklistMotorista(tipo) {
+    executar('listarVeiculosParaSelectSimples').then(function (veiculos) {
+      const optionsVeiculos = veiculos.map(function (v) {
+        return '<option value="' + v.idVeiculo + '">' + v.placa + '</option>';
+      }).join('');
+
+      const itensChecklist = [
+        ['pneusOk', 'Pneus em boas condições'],
+        ['luzesOk', 'Luzes/setas funcionando'],
+        ['freiosOk', 'Freios OK'],
+        ['oleoMotorOk', 'Nível de óleo OK'],
+        ['arrefecimentoOk', 'Arrefecimento OK'],
+        ['vazamentosOk', 'Sem vazamentos'],
+        ['tacografoOk', 'Tacógrafo funcionando'],
+        ['documentosOk', 'Documentos do veículo em dia']
+      ];
+
+      const html =
+        '<form id="form-checklist-motorista" class="form-grid">' +
+          campoSelect('Veículo *', 'ck-idVeiculo', '<option value="">Selecione...</option>' + optionsVeiculos) +
+          campoDataHora('Data/hora', 'ck-dataHora', new Date()) +
+
+          campoNumero('Km do odômetro', 'ck-kmOdometro', '') +
+          '<div></div>' +
+
+          '<div class="campo-full">' +
+            '<label style="font-size:12px;color:var(--cor-texto-suave);font-weight:600;">Itens de inspeção</label>' +
+            '<div class="grid-checklist">' +
+              itensChecklist.map(function (item) { return campoCheckbox(item[1], 'ck-' + item[0], true); }).join('') +
+            '</div>' +
+          '</div>' +
+
+          campoTextarea('Avarias encontradas (se houver)', 'ck-avariasEncontradas', '') +
+          campoTextarea('Observações', 'ck-observacoes', '') +
+
+          '<div class="form-acoes">' +
+            '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+            '<button type="submit" class="btn btn-primario">Enviar checklist</button>' +
+          '</div>' +
+        '</form>';
+
+      const corpo = abrirModal('Checklist de ' + (tipo === 'SAIDA' ? 'saída' : tipo === 'CHEGADA' ? 'chegada' : 'diário'), html);
+      corpo.querySelector('#form-checklist-motorista').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        const dados = {
+          idVeiculo: document.getElementById('ck-idVeiculo').value,
+          dataHora: document.getElementById('ck-dataHora').value,
+          kmOdometro: document.getElementById('ck-kmOdometro').value,
+          tipoChecklist: tipo,
+          avariasEncontradas: document.getElementById('ck-avariasEncontradas').value,
+          observacoes: document.getElementById('ck-observacoes').value
+        };
+        itensChecklist.forEach(function (item) {
+          dados[item[0]] = document.getElementById('ck-' + item[0]).checked;
+        });
+
+        executar('registrarChecklist', dados).then(function (resultado) {
+          if (resultado.status === 'BLOQUEADO') {
+            mostrarToast('Checklist enviado. ATENÇÃO: item crítico reprovado — veículo bloqueado automaticamente.', 'erro');
+          } else if (resultado.status === 'COM_PENDENCIA') {
+            mostrarToast('Checklist enviado com pendências. O gestor foi notificado.', 'alerta');
+          } else {
+            mostrarToast('Checklist enviado. Tudo OK!', 'sucesso');
+          }
+          fecharModal();
+          carregarMeusChecklists();
+        });
+      });
+    });
+  }
+
+  /* ================= ABASTECIMENTO (mobile-first) ================= */
+  function abrirFormularioAbastecimentoMotorista() {
+    Promise.all([
+      executar('listarVeiculosParaSelectSimples'),
+      executar('listarMinhasViagensAtivas')
+    ]).then(function (resultados) {
+      const veiculos = resultados[0];
+      const viagensAtivas = resultados[1];
+      const viagemEmAndamento = viagensAtivas.find(function (v) { return v.statusViagem === 'EM_ANDAMENTO'; });
+
+      const optionsVeiculos = veiculos.map(function (v) {
+        return '<option value="' + v.idVeiculo + '">' + v.placa + '</option>';
+      }).join('');
+      const optionsCombustivel = ['DIESEL_S10', 'DIESEL_S500', 'ARLA32', 'OUTRO'].map(function (c) {
+        return '<option value="' + c + '">' + c.replace('_', ' ') + '</option>';
+      }).join('');
+      const optionsSistema = [
+        { valor: 'VEICULO', rotulo: 'Veículo (tração/motor principal)' },
+        { valor: 'REFRIGERACAO', rotulo: 'Refrigeração (motor do baú câmara fria)' }
+      ].map(function (s) { return '<option value="' + s.valor + '">' + s.rotulo + '</option>'; }).join('');
+
+      const avisoViagem = viagemEmAndamento
+        ? '<div class="campo-full" style="background:var(--cor-alerta-fundo);padding:10px 12px;border-radius:8px;">' +
+            '<label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;cursor:pointer;">' +
+              '<input type="checkbox" id="abm-confirmaViagem" checked style="margin-top:3px;">' +
+              '<span>Este abastecimento faz parte da viagem <strong>' + viagemEmAndamento.numeroViagem + '</strong> (' + viagemEmAndamento.origem + ' → ' + viagemEmAndamento.destino + '), que você está fazendo agora?</span>' +
+            '</label>' +
+          '</div>'
+        : '';
+      const campoOrigemPagamento = viagemEmAndamento
+        ? '<div class="campo-full" id="abm-origem-pagamento-container">' +
+            '<label style="font-size:12px;color:var(--cor-texto-suave);font-weight:600;">Você pagou isso com o repasse operacional que recebeu?</label>' +
+            '<div><label><input type="radio" name="abm-origem-pagamento" value="true" checked> Sim, usei o repasse</label> &nbsp; ' +
+            '<label><input type="radio" name="abm-origem-pagamento" value="false"> Não, foi outro dinheiro (do meu bolso ou outro)</label></div>' +
+          '</div>'
+        : '';
+
+      const html =
+        '<form id="form-abastecimento-motorista" class="form-grid">' +
+          campoSelect('Veículo *', 'abm-idVeiculo', '<option value="">Selecione...</option>' + optionsVeiculos) +
+          campoData('Data', 'abm-data', new Date()) +
+
+          '<div class="campo-full" id="abm-referencia-container"></div>' +
+
+          campoSelect('Combustível *', 'abm-tipoCombustivel', optionsCombustivel) +
+          campoSelect('Sistema abastecido *', 'abm-sistemaAbastecido', optionsSistema) +
+
+          '<div id="abm-campo-km-container">' + campoNumero('Km do odômetro *', 'abm-kmOdometro', '') + '</div>' +
+          '<div id="abm-campo-horimetro-container" style="display:none;">' + campoNumero('Horímetro (horas) *', 'abm-horimetro', '') + '</div>' +
+          campoNumero('Litros *', 'abm-litros', '') +
+          '<div class="campo-full" id="abm-tanque-cheio-container">' + campoCheckbox('Este abastecimento deixou o <strong>tanque cheio</strong> (completou até a boca)', 'abm-tanqueCheio', false) + '</div>' +
+
+          campoNumero('Valor por litro (R$) *', 'abm-valorLitro', '') +
+          campoTexto('Posto', 'abm-posto', '') +
+          '<div class="campo-full" style="margin-top:-6px;">' +
+            '<input type="hidden" id="abm-postoLatitude">' +
+            '<input type="hidden" id="abm-postoLongitude">' +
+            '<button type="button" class="btn btn-secundario" id="abm-btn-capturar-localizacao" style="padding:6px 12px;font-size:12px;">📍 Usar minha localização atual</button>' +
+            '<span id="abm-status-localizacao" style="font-size:11px;color:var(--cor-texto-suave);margin-left:8px;"></span>' +
+          '</div>' +
+
+          campoTexto('Nº do documento/nota', 'abm-numeroDocumento', '') +
+
+          campoTexto('URL do comprovante (foto)', 'abm-comprovanteUrl', '') +
+          avisoViagem +
+          campoOrigemPagamento +
+
+          '<div class="form-acoes">' +
+            '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+            '<button type="submit" class="btn btn-primario">Registrar abastecimento</button>' +
+          '</div>' +
+        '</form>';
+
+      const corpo = abrirModal('Registrar abastecimento', html);
+
+      document.getElementById('abm-sistemaAbastecido').addEventListener('change', function () {
+        const ehRefrigeracao = this.value === 'REFRIGERACAO';
+        document.getElementById('abm-campo-km-container').style.display = ehRefrigeracao ? 'none' : '';
+        document.getElementById('abm-campo-horimetro-container').style.display = ehRefrigeracao ? '' : 'none';
+      });
+
+      document.getElementById('abm-idVeiculo').addEventListener('change', function () {
+        const idVeiculo = this.value;
+        const refContainer = document.getElementById('abm-referencia-container');
+        if (!idVeiculo) { refContainer.innerHTML = ''; return; }
+        executar('obterReferenciaAbastecimento', idVeiculo).then(function (ref) {
+          refContainer.innerHTML = montarHtmlReferenciaAbastecimento(ref);
+        });
+      });
+      // Se só existe um veículo na lista, já dispara a busca de referência sozinho.
+      if (veiculos.length === 1) {
+        document.getElementById('abm-idVeiculo').value = veiculos[0].idVeiculo;
+        document.getElementById('abm-idVeiculo').dispatchEvent(new Event('change'));
+      }
+
+      document.getElementById('abm-btn-capturar-localizacao').addEventListener('click', function () {
+        const statusEl = document.getElementById('abm-status-localizacao');
+        if (!navigator.geolocation) {
+          statusEl.textContent = 'Seu navegador não suporta localização.';
+          return;
+        }
+        statusEl.textContent = 'Obtendo localização...';
+        navigator.geolocation.getCurrentPosition(function (posicao) {
+          document.getElementById('abm-postoLatitude').value = posicao.coords.latitude;
+          document.getElementById('abm-postoLongitude').value = posicao.coords.longitude;
+          statusEl.textContent = '✓ Localização capturada (' + posicao.coords.latitude.toFixed(5) + ', ' + posicao.coords.longitude.toFixed(5) + ')';
+        }, function () {
+          statusEl.textContent = 'Não foi possível obter a localização. Verifique a permissão do navegador.';
+        }, { enableHighAccuracy: true, timeout: 10000 });
+      });
+
+      if (viagemEmAndamento) {
+        document.getElementById('abm-confirmaViagem').addEventListener('change', function () {
+          const container = document.getElementById('abm-origem-pagamento-container');
+          if (container) container.style.display = this.checked ? '' : 'none';
+        });
+      }
+
+      corpo.querySelector('#form-abastecimento-motorista').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        const radioOrigem = corpo.querySelector('input[name="abm-origem-pagamento"]:checked');
+        const confirmaViagem = document.getElementById('abm-confirmaViagem');
+        const vincularViagem = viagemEmAndamento && (!confirmaViagem || confirmaViagem.checked);
+        const dados = {
+          idVeiculo: document.getElementById('abm-idVeiculo').value,
+          data: document.getElementById('abm-data').value,
+          tipoCombustivel: document.getElementById('abm-tipoCombustivel').value,
+          sistemaAbastecido: document.getElementById('abm-sistemaAbastecido').value,
+          kmOdometro: document.getElementById('abm-kmOdometro').value,
+          horimetro: document.getElementById('abm-horimetro').value,
+          litros: document.getElementById('abm-litros').value,
+          tanqueCheio: document.getElementById('abm-tanqueCheio').checked,
+          valorLitro: document.getElementById('abm-valorLitro').value,
+          posto: document.getElementById('abm-posto').value,
+          postoLatitude: document.getElementById('abm-postoLatitude').value,
+          postoLongitude: document.getElementById('abm-postoLongitude').value,
+          numeroDocumento: document.getElementById('abm-numeroDocumento').value,
+          comprovanteUrl: document.getElementById('abm-comprovanteUrl').value,
+          idViagem: vincularViagem ? viagemEmAndamento.idViagem : '',
+          pagoComRepasse: radioOrigem ? radioOrigem.value : false
+        };
+        executar('registrarAbastecimento', dados).then(function () {
+          mostrarToast('Abastecimento registrado! Aguardando aprovação do gestor.', 'sucesso');
+          fecharModal();
+          carregarMeusAbastecimentos();
+        });
+      });
+    });
+  }
+
+  /* ================= JORNADA ================= */
+  function abrirFormularioIniciarJornada() {
+    executar('listarVeiculosParaSelectSimples').then(function (veiculos) {
+      const optionsVeiculos = veiculos.map(function (v) { return '<option value="' + v.idVeiculo + '">' + v.placa + '</option>'; }).join('');
+
+      const html =
+        '<form id="form-iniciar-jornada" class="form-grid">' +
+          campoSelect('Veículo', 'jr-idVeiculo', '<option value="">Não informar agora</option>' + optionsVeiculos) +
+          campoTexto('Local de início', 'jr-localInicio', '') +
+          '<div class="form-acoes">' +
+            '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+            '<button type="submit" class="btn btn-primario">Iniciar jornada agora</button>' +
+          '</div>' +
+        '</form>';
+
+      const corpo = abrirModal('Iniciar jornada', html);
+      corpo.querySelector('#form-iniciar-jornada').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        const dados = {
+          idVeiculo: document.getElementById('jr-idVeiculo').value,
+          localInicio: document.getElementById('jr-localInicio').value
+        };
+        executar('iniciarJornada', dados).then(function () {
+          mostrarToast('Jornada iniciada. Bom trabalho!', 'sucesso');
+          fecharModal();
+          atualizarEstadoBotaoJornada();
+        });
+      });
+    });
+  }
+
+  function abrirFormularioEncerrarJornada(idHoras) {
+    const html =
+      '<form id="form-encerrar-jornada" class="form-grid">' +
+        campoNumero('Minutos de intervalo (almoço/descanso)', 'jr-minutosIntervalo', 0) +
+        campoTexto('Local de encerramento', 'jr-localFim', '') +
+        campoTextarea('Observações', 'jr-observacoes', '') +
+        '<div class="form-acoes">' +
+          '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primario">Encerrar jornada agora</button>' +
+        '</div>' +
+      '</form>';
+
+    const corpo = abrirModal('Encerrar jornada', html);
+    corpo.querySelector('#form-encerrar-jornada').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      const dados = {
+        minutosIntervalo: document.getElementById('jr-minutosIntervalo').value,
+        localFim: document.getElementById('jr-localFim').value,
+        observacoes: document.getElementById('jr-observacoes').value
+      };
+      executar('encerrarJornada', idHoras, dados).then(function (resultado) {
+        mostrarToast('Jornada encerrada: ' + resultado.horasTrabalhadas + 'h trabalhadas.', 'sucesso');
+        fecharModal();
+        atualizarEstadoBotaoJornada();
+      });
+    });
+  }
+
+  /* ================= OCORRÊNCIA ================= */
+  function abrirFormularioOcorrenciaMotorista() {
+    executar('listarVeiculosParaSelectSimples').then(function (veiculos) {
+      const optionsVeiculos = veiculos.map(function (v) { return '<option value="' + v.idVeiculo + '">' + v.placa + '</option>'; }).join('');
+      const optionsTipo = ['MECANICA', 'ACIDENTE', 'MULTA', 'AVARIA', 'ATRASO', 'SEGURANCA', 'OUTRA'].map(function (t) {
+        return '<option value="' + t + '">' + t + '</option>';
+      }).join('');
+      const optionsGravidade = ['BAIXA', 'MEDIA', 'ALTA', 'CRITICA'].map(function (g) {
+        return '<option value="' + g + '">' + g + '</option>';
+      }).join('');
+
+      const html =
+        '<form id="form-ocorrencia-motorista" class="form-grid">' +
+          campoSelect('Veículo *', 'oc-idVeiculo', '<option value="">Selecione...</option>' + optionsVeiculos) +
+          campoDataHora('Data/hora', 'oc-dataHora', new Date()) +
+          campoSelect('Tipo *', 'oc-tipo', optionsTipo) +
+          campoSelect('Gravidade *', 'oc-gravidade', optionsGravidade) +
+          campoTexto('Local', 'oc-local', '') +
+          campoTextarea('Descrição *', 'oc-descricao', '') +
+          '<div class="form-acoes">' +
+            '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+            '<button type="submit" class="btn btn-primario">Registrar ocorrência</button>' +
+          '</div>' +
+        '</form>';
+
+      const corpo = abrirModal('Registrar ocorrência', html);
+      corpo.querySelector('#form-ocorrencia-motorista').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        const dados = {
+          idVeiculo: document.getElementById('oc-idVeiculo').value,
+          dataHora: document.getElementById('oc-dataHora').value,
+          tipo: document.getElementById('oc-tipo').value,
+          gravidade: document.getElementById('oc-gravidade').value,
+          local: document.getElementById('oc-local').value,
+          descricao: document.getElementById('oc-descricao').value
+        };
+        executar('registrarOcorrencia', dados).then(function () {
+          mostrarToast('Ocorrência registrada. O gestor foi notificado.', 'sucesso');
+          fecharModal();
+        });
+      });
+    });
+  }
+
+  /* ================= SOLICITAÇÃO DE MANUTENÇÃO ================= */
+  function abrirFormularioSolicitarManutencaoMotorista() {
+    executar('listarVeiculosParaSelectSimples').then(function (veiculos) {
+      const optionsVeiculos = veiculos.map(function (v) { return '<option value="' + v.idVeiculo + '">' + v.placa + '</option>'; }).join('');
+      const optionsTipo = ['PREVENTIVA', 'CORRETIVA', 'PNEUS', 'DOCUMENTAL', 'OUTRA'].map(function (t) {
+        return '<option value="' + t + '">' + t + '</option>';
+      }).join('');
+
+      const html =
+        '<form id="form-manutencao-motorista" class="form-grid">' +
+          campoSelect('Veículo *', 'sm-idVeiculo', '<option value="">Selecione...</option>' + optionsVeiculos) +
+          campoSelect('Tipo *', 'sm-tipo', optionsTipo) +
+          campoNumero('Km do odômetro', 'sm-kmOdometro', '') +
+          campoTextarea('Descreva o problema ou serviço necessário *', 'sm-descricao', '') +
+          '<div class="form-acoes">' +
+            '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+            '<button type="submit" class="btn btn-primario">Enviar solicitação</button>' +
+          '</div>' +
+        '</form>';
+
+      const corpo = abrirModal('Solicitar manutenção', html);
+      corpo.querySelector('#form-manutencao-motorista').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        const dados = {
+          idVeiculo: document.getElementById('sm-idVeiculo').value,
+          tipo: document.getElementById('sm-tipo').value,
+          kmOdometro: document.getElementById('sm-kmOdometro').value,
+          descricao: document.getElementById('sm-descricao').value
+        };
+        executar('solicitarManutencao', dados).then(function () {
+          mostrarToast('Solicitação de manutenção enviada.', 'sucesso');
+          fecharModal();
+        });
+      });
+    });
+  }
+
+  /* ================= MINHAS VIAGENS ================= */
+  function abrirModalMinhasViagens() {
+    Promise.all([
+      executar('listarMinhasViagensAtivas'),
+      executar('listarMeuHistoricoViagens')
+    ]).then(function (resultados) {
+      const ativas = resultados[0];
+      const historico = resultados[1];
+
+      const htmlAtivas = (ativas && ativas.length > 0)
+        ? '<table class="tabela-simples"><tbody>' + ativas.map(function (v) {
+            const previstaFmt = v.dataPrevistaSaida ? new Date(v.dataPrevistaSaida).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+            let acao = '';
+            let badgeStatus = '<span class="badge ' + (v.statusViagem === 'EM_ANDAMENTO' ? 'badge-alerta' : 'badge-sucesso') + '">' + v.statusViagem.replace('_', ' ') + '</span>';
+
+            if (v.statusAprovacao === 'PENDENTE') {
+              badgeStatus = '<span class="badge badge-alerta">Aguardando aprovação</span>';
+              acao = '<span style="font-size:11px;color:var(--cor-texto-suave);">O gestor precisa aprovar antes de iniciar</span>';
+            } else if (v.statusViagem === 'PLANEJADA') {
+              acao = '<button type="button" class="btn btn-primario" style="padding:6px 12px;font-size:12px;" onclick="fecharModal(); abrirFormularioIniciarViagemMotorista(\'' + v.idViagem + '\');">Iniciar viagem</button>';
+            } else if (v.statusViagem === 'EM_ANDAMENTO') {
+              acao = '<button type="button" class="btn btn-primario" style="padding:6px 12px;font-size:12px;" onclick="fecharModal(); abrirFormularioEncerrarViagemMotorista(\'' + v.idViagem + '\');">Finalizar viagem</button>';
+            }
+            return '<tr>' +
+              '<td><strong>' + v.numeroViagem + '</strong><br><span style="font-size:11px;color:var(--cor-texto-suave);">Previsto: ' + previstaFmt + '</span></td>' +
+              '<td>' + v.placa + '</td>' +
+              '<td>' + v.origem + ' → ' + v.destino + '</td>' +
+              '<td>' + badgeStatus + '</td>' +
+              '<td>' + acao + '</td></tr>';
+          }).join('') + '</tbody></table>'
+        : '<p style="color:var(--cor-texto-suave);font-size:13px;">Nenhuma viagem ativa no momento.</p>';
+
+      const htmlHistorico = (historico && historico.length > 0)
+        ? '<table class="tabela-simples"><tbody>' + historico.map(function (v) {
+            const dataFmt = v.dataChegada ? new Date(v.dataChegada).toLocaleDateString('pt-BR') : '-';
+            const kmTxt = v.kmRodado ? Number(v.kmRodado).toLocaleString('pt-BR') + ' km' : '-';
+            return '<tr><td>' + v.numeroViagem + '</td><td>' + v.origem + ' → ' + v.destino + '</td>' +
+              '<td>' + dataFmt + '</td><td>' + kmTxt + '</td><td>' + v.statusViagem + '</td></tr>';
+          }).join('') + '</tbody></table>'
+        : '<p style="color:var(--cor-texto-suave);font-size:13px;">Nenhum histórico ainda.</p>';
+
+      const html =
+        '<div class="barra-acoes-secao" style="margin:0 0 12px;">' +
+          '<button type="button" class="btn btn-secundario" style="padding:6px 12px;font-size:12px;" onclick="fecharModal(); abrirRelatorioViagensMotorista();">Relatório por período</button>' +
+          '<button type="button" class="btn btn-primario" style="padding:6px 12px;font-size:12px;" onclick="fecharModal(); abrirFormularioCadastrarViagemMotorista();">Cadastrar viagem</button>' +
+        '</div>' +
+        '<h4 style="margin-top:0;">Viagens ativas</h4>' + htmlAtivas +
+        '<h4>Histórico recente</h4>' + htmlHistorico;
+
+      abrirModal('Minhas viagens', html);
+    });
+  }
+
+  function abrirFormularioCadastrarViagemMotorista() {
+    executar('listarVeiculosParaSelectSimples').then(function (veiculos) {
+      const optionsVeiculos = veiculos.map(function (v) { return '<option value="' + v.idVeiculo + '">' + v.placa + '</option>'; }).join('');
+
+      const html =
+        '<p style="font-size:13px;color:var(--cor-texto-suave);">Essa viagem vai para aprovação do gestor. Só depois de aprovada você poderá iniciá-la.</p>' +
+        '<form id="form-cadastrar-viagem-motorista" class="form-grid">' +
+          campoSelect('Veículo *', 'cvm-idVeiculo', '<option value="">Selecione...</option>' + optionsVeiculos) +
+          '<div class="campo-full" id="cvm-carreta-container"></div>' +
+          campoTexto('Cliente *', 'cvm-cliente', '') +
+          campoTexto('Origem *', 'cvm-origem', '') +
+          campoTexto('Destino *', 'cvm-destino', '') +
+          campoData('Data prevista de saída', 'cvm-dataPrevistaSaida', new Date()) +
+          '<div class="campo"><label>Hora prevista de saída</label><input type="time" id="cvm-horaPrevistaSaida"></div>' +
+          campoNumero('Valor do frete estimado (R$)', 'cvm-valorFrete', '') +
+          campoTextarea('Observações', 'cvm-observacoes', '') +
+          '<div class="form-acoes">' +
+            '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+            '<button type="submit" class="btn btn-primario">Enviar para aprovação</button>' +
+          '</div>' +
+        '</form>';
+
+      const corpo = abrirModal('Cadastrar viagem', html);
+
+      document.getElementById('cvm-idVeiculo').addEventListener('change', function () {
+        const idVeiculo = this.value;
+        const container = document.getElementById('cvm-carreta-container');
+        if (!idVeiculo) { container.innerHTML = ''; return; }
+        executar('listarCarretasDoCavaloMecanico', idVeiculo).then(function (carretas) {
+          if (!carretas || carretas.length === 0) { container.innerHTML = ''; return; }
+          const lista = carretas.map(function (c) { return c.placa + ' (' + c.statusVeiculo + ')'; }).join(', ');
+          container.innerHTML = '<p style="font-size:12px;color:var(--cor-texto-suave);background:var(--cor-fundo);padding:8px 10px;border-radius:8px;margin:0;">🚛 Carreta vinculada: <strong>' + lista + '</strong></p>';
+        });
+      });
+
+      corpo.querySelector('#form-cadastrar-viagem-motorista').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        const dados = {
+          idVeiculo: document.getElementById('cvm-idVeiculo').value,
+          cliente: document.getElementById('cvm-cliente').value,
+          origem: document.getElementById('cvm-origem').value,
+          destino: document.getElementById('cvm-destino').value,
+          dataPrevistaSaida: document.getElementById('cvm-dataPrevistaSaida').value,
+          horaPrevistaSaida: document.getElementById('cvm-horaPrevistaSaida').value,
+          valorFrete: document.getElementById('cvm-valorFrete').value,
+          observacoes: document.getElementById('cvm-observacoes').value
+        };
+        executar('motoristaSolicitarViagem', dados).then(function () {
+          mostrarToast('Viagem enviada para aprovação do gestor!', 'sucesso');
+          fecharModal();
+        });
+      });
+    });
+  }
+
+  function abrirFormularioIniciarViagemMotorista(idViagem) {
+    const html =
+      '<form id="form-iniciar-viagem-motorista" class="form-grid">' +
+        campoNumero('Km atual do veículo (odômetro) *', 'ivm-kmSaida', '') +
+        '<div class="form-acoes">' +
+          '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primario">Confirmar início da viagem</button>' +
+        '</div>' +
+      '</form>';
+
+    const corpo = abrirModal('Iniciar viagem', html);
+    corpo.querySelector('#form-iniciar-viagem-motorista').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      const dados = { kmSaida: document.getElementById('ivm-kmSaida').value };
+      executar('iniciarViagem', idViagem, dados).then(function () {
+        mostrarToast('Viagem iniciada. Boa viagem!', 'sucesso');
+        fecharModal();
+      });
+    });
+  }
+
+  function abrirFormularioEncerrarViagemMotorista(idViagem) {
+    const html =
+      '<form id="form-encerrar-viagem-motorista" class="form-grid">' +
+        campoNumero('Km atual do veículo (odômetro) *', 'evm-kmChegada', '') +
+        campoNumero('Pedágio pago na viagem (R$)', 'evm-pedagioReal', 0) +
+        campoTexto('URL do comprovante de entrega (foto)', 'evm-comprovanteEntregaUrl', '') +
+        '<div class="form-acoes">' +
+          '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primario">Confirmar chegada</button>' +
+        '</div>' +
+      '</form>';
+
+    const corpo = abrirModal('Finalizar viagem', html);
+    corpo.querySelector('#form-encerrar-viagem-motorista').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      const dados = {
+        kmChegada: document.getElementById('evm-kmChegada').value,
+        pedagioReal: document.getElementById('evm-pedagioReal').value,
+        comprovanteEntregaUrl: document.getElementById('evm-comprovanteEntregaUrl').value
+      };
+      executar('encerrarViagem', idViagem, dados).then(function () {
+        mostrarToast('Viagem finalizada com sucesso!', 'sucesso');
+        fecharModal();
+      });
+    });
+  }
+
+  /**
+   * Relatório do próprio motorista: viagens concluídas num
+   * período, com frete e comissão de cada uma, e os totais.
+   */
+  function abrirRelatorioViagensMotorista() {
+    const hoje = new Date();
+    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+
+    const html =
+      '<div class="form-grid" style="margin-bottom:10px;">' +
+        campoData('De', 'rvm-dataInicio', inicioMes) +
+        campoData('Até', 'rvm-dataFim', hoje) +
+      '</div>' +
+      '<button type="button" class="btn btn-primario" id="btn-gerar-relatorio-viagens-motorista" style="margin-bottom:14px;">Gerar relatório</button>' +
+      '<div id="area-relatorio-viagens-motorista"></div>';
+
+    const corpo = abrirModal('Minhas viagens — relatório', html);
+    corpo.querySelector('#btn-gerar-relatorio-viagens-motorista').addEventListener('click', function () {
+      const dataInicio = document.getElementById('rvm-dataInicio').value;
+      const dataFim = document.getElementById('rvm-dataFim').value;
+      executar('gerarMeuRelatorioViagens', dataInicio, dataFim).then(renderizarRelatorioViagensMotorista);
+    });
+  }
+
+  function renderizarRelatorioViagensMotorista(r) {
+    const area = document.getElementById('area-relatorio-viagens-motorista');
+
+    const htmlViagens = (r.viagens && r.viagens.length > 0)
+      ? '<table class="tabela-simples"><thead><tr><th>Nº</th><th>Placa</th><th>Rota</th><th>Chegada</th><th>Km</th><th>Frete</th><th>Comissão</th></tr></thead><tbody>' +
+        r.viagens.map(function (v) {
+          const comissaoTxt = v.percentualMotorista > 0
+            ? v.percentualMotorista + '% (' + formatarMoedaFrontend(v.valorMotorista) + ')'
+            : '-';
+          return '<tr><td>' + v.numeroViagem + '</td><td>' + v.placa + '</td><td>' + v.origem + ' → ' + v.destino + '</td>' +
+            '<td>' + new Date(v.dataChegada).toLocaleDateString('pt-BR') + '</td>' +
+            '<td>' + Number(v.kmRodado || 0).toLocaleString('pt-BR') + ' km</td>' +
+            '<td>' + formatarMoedaFrontend(v.valorFrete) + '</td>' +
+            '<td>' + comissaoTxt + '</td></tr>';
+        }).join('') + '</tbody></table>'
+      : '<p style="color:var(--cor-texto-suave);font-size:13px;">Nenhuma viagem concluída nesse período.</p>';
+
+    area.innerHTML =
+      '<div class="painel" style="background:var(--cor-fundo);margin-bottom:12px;">' +
+        '<p style="margin:0;font-size:13px;"><strong>' + r.totalViagens + '</strong> viagem(ns) — ' +
+        Number(r.totalKm || 0).toLocaleString('pt-BR') + ' km rodados</p>' +
+        '<p style="margin:4px 0 0;font-size:13px;"><strong>Total de frete:</strong> ' + formatarMoedaFrontend(r.totalFrete) + '</p>' +
+        '<p style="margin:4px 0 0;font-size:13px;color:var(--cor-sucesso);"><strong>Total de comissão:</strong> ' + formatarMoedaFrontend(r.totalComissao) + '</p>' +
+      '</div>' +
+      htmlViagens;
+  }
+</script>
+          </section>
+
+        </main>
+      </div>
+
+      <div id="modal-overlay" class="modal-overlay oculto">
+        <div class="modal-caixa">
+          <div class="modal-cabecalho">
+            <h3 id="modal-titulo">Título</h3>
+            <button class="icon-btn" id="modal-fechar" aria-label="Fechar"><i data-lucide="x"></i></button>
+          </div>
+          <div class="modal-corpo" id="modal-corpo"></div>
+        </div>
+      </div>
+    </div>
+
+</body>
+</html>
