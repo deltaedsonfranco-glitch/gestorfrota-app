@@ -447,8 +447,8 @@
       data: {
         labels: labels,
         datasets: [
-          { label: 'Receita', data: receitas, backgroundColor: '#1f7a4d' },
-          { label: 'Despesa', data: despesasArr, backgroundColor: '#a4272c' }
+          { label: 'Receita', data: receitas, backgroundColor: '#556b2f' },
+          { label: 'Despesa', data: despesasArr, backgroundColor: '#f2b705' }
         ]
       },
       options: {
