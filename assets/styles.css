@@ -71,6 +71,47 @@
   .app-shell[data-perfil="MOTORISTA"] .btn-primario { background: var(--musgo); }
   .app-shell[data-perfil="MOTORISTA"] .btn-primario:hover { background: var(--musgo-claro); }
 
+  /* ===================== PERFIL PROPRIETÁRIO (somente consulta) =====================
+     As telas são as mesmas do gestor; aqui somem os botões de cadastro e
+     edição. A proteção de verdade está no servidor (Proprietario.gs), que
+     recusa qualquer alteração — isto só deixa a tela limpa. */
+  .app-shell[data-perfil="PROPRIETARIO"] #btn-nova-viagem,
+  .app-shell[data-perfil="PROPRIETARIO"] #btn-novo-abastecimento-gestor,
+  .app-shell[data-perfil="PROPRIETARIO"] #btn-nova-despesa,
+  .app-shell[data-perfil="PROPRIETARIO"] #btn-nova-manutencao,
+  .app-shell[data-perfil="PROPRIETARIO"] #secao-fechamentos .painel:has(#form-previa-fechamento),
+  .app-shell[data-perfil="PROPRIETARIO"] #area-previa-fechamento,
+  .app-shell[data-perfil="PROPRIETARIO"] .btn-icone-tabela { display: none; }
+  .app-shell[data-perfil="PROPRIETARIO"] .btn-icone-tabela[title="Prestação de contas"],
+  .app-shell[data-perfil="PROPRIETARIO"] .btn-icone-tabela[title="Acompanhar (parcial)"],
+  .app-shell[data-perfil="PROPRIETARIO"] #secao-fechamentos .btn-icone-tabela[title="Ver relatório"],
+  .app-shell[data-perfil="PROPRIETARIO"] #secao-fechamentos .btn-icone-tabela[title="Aprovar"] { display: inline-flex; }
+  .app-shell[data-perfil="PROPRIETARIO"] .kpi-card:not(.kpi-clicavel) { cursor: default; }
+
+  .faixa-placas-proprietario {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: var(--cor-texto-suave);
+  }
+  .placa-chip {
+    font-family: var(--fonte-titulo);
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.06em;
+    color: var(--azul-900);
+    background: #fff;
+    border: 2px solid var(--azul-900);
+    border-top-width: 6px;
+    border-top-color: var(--azul-700);
+    border-radius: 6px;
+    padding: 2px 10px;
+  }
+  [data-theme="escuro"] .placa-chip { background: var(--cor-superficie); color: var(--cor-texto); border-color: #8ea3c0; }
+
   * { box-sizing: border-box; }
 
   body {

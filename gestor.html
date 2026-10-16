@@ -18,11 +18,11 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="assets/styles.css?v=2">
-  <script src="config.js?v=2"></script>
-  <script src="assets/api.js?v=2"></script>
-  <script src="assets/util.js?v=2"></script>
-  <script src="assets/ui.js?v=2"></script>
+  <link rel="stylesheet" href="assets/styles.css?v=3">
+  <script src="config.js?v=3"></script>
+  <script src="assets/api.js?v=3"></script>
+  <script src="assets/util.js?v=3"></script>
+  <script src="assets/ui.js?v=3"></script>
   <script>
     protegerPagina('GESTOR');
     document.addEventListener('DOMContentLoaded', iniciarPaginaSistema);
@@ -4221,7 +4221,7 @@
         <th>Nome</th>
         <th>E-mail</th>
         <th>Perfil</th>
-        <th>Motorista vinculado</th>
+        <th>Vínculo</th>
         <th>Senha</th>
         <th></th>
       </tr>
@@ -4234,6 +4234,8 @@
 
 <script>
   let usuariosCache = [];
+  let acessosProprietariosCache = {};
+  let nomesProprietariosCache = {};
 
   registrarCarregadorSecao('usuarios', carregarUsuarios);
 
@@ -4247,10 +4249,32 @@
   });
 
   function carregarUsuarios() {
-    executar('listarUsuarios').then(function (usuarios) {
-      usuariosCache = usuarios;
-      renderizarTabelaUsuarios(usuarios);
+    // Vínculos do perfil PROPRIETARIO: se as colunas ainda não
+    // existirem na planilha, a tela continua funcionando sem eles.
+    const promessaAcessos = chamarBackend('listarAcessosProprietarios').catch(function () { return []; });
+    const promessaProps = chamarBackend('listarProprietariosParaSelect').catch(function () { return []; });
+    Promise.all([executar('listarUsuarios'), promessaAcessos, promessaProps]).then(function (r) {
+      acessosProprietariosCache = {};
+      (r[1] || []).forEach(function (a) { acessosProprietariosCache[a.email] = a; });
+      nomesProprietariosCache = {};
+      (r[2] || []).forEach(function (p) { nomesProprietariosCache[p.idProprietario] = p.nome; });
+      usuariosCache = r[0];
+      renderizarTabelaUsuarios(usuariosCache);
     });
+  }
+
+  function descreverVinculoUsuario(u) {
+    if (u.perfil === 'PROPRIETARIO') {
+      const a = acessosProprietariosCache[u.email];
+      if (!a || (!a.idProprietario && !a.veiculosPermitidos.length)) {
+        return '<span class="badge badge-alerta">Sem placas liberadas</span>';
+      }
+      const partes = [];
+      if (a.idProprietario) partes.push(nomesProprietariosCache[a.idProprietario] || 'Proprietário vinculado');
+      if (a.veiculosPermitidos.length) partes.push('+' + a.veiculosPermitidos.length + (a.veiculosPermitidos.length === 1 ? ' placa extra' : ' placas extras'));
+      return partes.join(' ');
+    }
+    return u.nomeMotoristaVinculado || '-';
   }
 
   function filtrarUsuarios(termo) {
@@ -4273,7 +4297,7 @@
         '<td><strong>' + u.nome + '</strong></td>' +
         '<td>' + u.email + '</td>' +
         '<td>' + u.perfil + '</td>' +
-        '<td>' + (u.nomeMotoristaVinculado || '-') + '</td>' +
+        '<td>' + descreverVinculoUsuario(u) + '</td>' +
         '<td><span class="badge ' + (u.temSenha ? 'badge-sucesso' : 'badge-alerta') + '">' + (u.temSenha ? 'Definida' : 'Sem senha') + '</span></td>' +
         '<td>' +
           '<button class="btn-icone-tabela" title="Editar" onclick="abrirFormularioUsuario(\'' + u.email + '\')"><i data-lucide="pencil"></i></button>' +
@@ -4291,14 +4315,37 @@
     const promessaUsuario = email
       ? Promise.resolve(usuariosCache.find(function (u) { return u.email === email; }))
       : Promise.resolve(null);
+    const promessaProps = executar('listarProprietariosParaSelect');
+    const promessaVeiculos = executar('listarVeiculosParaSelectSimples');
 
-    Promise.all([promessaMotoristas, promessaUsuario]).then(function (resultados) {
-      renderizarFormularioUsuario(resultados[0], resultados[1]);
+    Promise.all([promessaMotoristas, promessaUsuario, promessaProps, promessaVeiculos]).then(function (resultados) {
+      renderizarFormularioUsuario(resultados[0], resultados[1], resultados[2], resultados[3]);
     });
   }
 
-  function renderizarFormularioUsuario(motoristas, u) {
+  function renderizarFormularioUsuario(motoristas, u, proprietarios, veiculos) {
     const dados = u || {};
+    const acesso = (dados.email && acessosProprietariosCache[dados.email]) || { idProprietario: '', veiculosPermitidos: [] };
+
+    const optionsProprietarios = (proprietarios || []).map(function (p) {
+      const sel = acesso.idProprietario === p.idProprietario ? 'selected' : '';
+      return '<option value="' + p.idProprietario + '" ' + sel + '>' + p.nome + '</option>';
+    }).join('');
+
+    const checksPlacas = (veiculos || []).map(function (v) {
+      const marcado = acesso.veiculosPermitidos.indexOf(v.idVeiculo) !== -1 ? 'checked' : '';
+      return '<label class="campo-checkbox"><input type="checkbox" class="us-placa-extra" value="' + v.idVeiculo + '" ' + marcado + '>' + v.placa + '</label>';
+    }).join('');
+
+    const blocoProprietario =
+      '<div id="us-proprietario-container" class="campo-full" style="display:none;">' +
+        campoSelect('Proprietário vinculado (vê os veículos dele)', 'us-idProprietario', '<option value="">Nenhum — só as placas marcadas abaixo</option>' + optionsProprietarios) +
+        '<div class="campo" style="margin-top:12px;">' +
+          '<label>Placas extras que este usuário também pode ver</label>' +
+          '<div class="grid-checklist">' + (checksPlacas || '<span style="color:var(--cor-texto-suave);">Nenhum veículo cadastrado.</span>') + '</div>' +
+        '</div>' +
+        '<p style="font-size:13px;color:var(--cor-texto-suave);margin:10px 0 0;">O proprietário só consulta: painel, viagens, abastecimentos, despesas, manutenções e fechamentos dessas placas. A única ação permitida é aprovar fechamentos.</p>' +
+      '</div>';
     const emEdicao = !!dados.email;
 
     const optionsMotoristas = motoristas.map(function (m) {
@@ -4306,7 +4353,7 @@
       return '<option value="' + m.idMotorista + '" ' + sel + '>' + m.nome + '</option>';
     }).join('');
 
-    const optionsPerfil = ['GESTOR', 'MOTORISTA'].map(function (p) {
+    const optionsPerfil = ['GESTOR', 'MOTORISTA', 'PROPRIETARIO'].map(function (p) {
       const sel = (dados.perfil || 'MOTORISTA') === p ? 'selected' : '';
       return '<option value="' + p + '" ' + sel + '>' + p + '</option>';
     }).join('');
@@ -4324,6 +4371,7 @@
         campoEmail +
         campoSelect('Perfil *', 'us-perfil', optionsPerfil) +
         '<div id="us-motorista-container">' + campoSelect('Motorista vinculado', 'us-idMotorista', '<option value="">Selecione...</option>' + optionsMotoristas) + '</div>' +
+        blocoProprietario +
         campoSenhaInicial +
         '<div class="form-acoes">' +
           '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
@@ -4336,6 +4384,7 @@
     function alternarCampoMotorista() {
       const perfil = document.getElementById('us-perfil').value;
       document.getElementById('us-motorista-container').style.display = (perfil === 'MOTORISTA') ? '' : 'none';
+      document.getElementById('us-proprietario-container').style.display = (perfil === 'PROPRIETARIO') ? '' : 'none';
     }
     document.getElementById('us-perfil').addEventListener('change', alternarCampoMotorista);
     alternarCampoMotorista();
@@ -4349,14 +4398,31 @@
         idMotorista: perfil === 'MOTORISTA' ? document.getElementById('us-idMotorista').value : ''
       };
 
+      const idProprietario = document.getElementById('us-idProprietario').value;
+      const placasExtras = Array.prototype.map.call(
+        document.querySelectorAll('.us-placa-extra:checked'), function (c) { return c.value; });
+      if (perfil === 'PROPRIETARIO' && !idProprietario && placasExtras.length === 0) {
+        mostrarToast('Escolha o proprietário vinculado ou marque pelo menos uma placa.', 'erro');
+        return;
+      }
+
       let chamada;
+      let emailAlvo;
       if (emEdicao) {
+        emailAlvo = dados.email;
         chamada = executar('atualizarUsuario', dados.email, dadosForm);
       } else {
         dadosForm.email = document.getElementById('us-email').value;
+        emailAlvo = String(dadosForm.email).trim().toLowerCase();
         const campoSenha = document.getElementById('us-senha');
         if (campoSenha && campoSenha.value) dadosForm.senha = campoSenha.value;
         chamada = executar('criarUsuario', dadosForm);
+      }
+
+      if (perfil === 'PROPRIETARIO') {
+        chamada = chamada.then(function () {
+          return executar('salvarAcessoProprietario', emailAlvo, idProprietario, placasExtras);
+        });
       }
 
       chamada.then(function () {

@@ -47,7 +47,9 @@ function pegarAvisoLogin() {
 }
 
 function paginaDoPerfil(perfil) {
-  return perfil === 'GESTOR' ? 'gestor.html' : 'motorista.html';
+  if (perfil === 'GESTOR') return 'gestor.html';
+  if (perfil === 'PROPRIETARIO') return 'proprietario.html';
+  return 'motorista.html';
 }
 
 /* ---------- chamada ao servidor ---------- */
@@ -206,7 +208,41 @@ function iniciarPaginaSistema() {
   if (window.APP_USUARIO.perfil === 'MOTORISTA' && appState.carregadoresSecao.motorista) {
     appState.carregadoresSecao.motorista();
   }
+  if (window.APP_USUARIO.perfil === 'PROPRIETARIO') {
+    iniciarPainelProprietario();
+  }
   conferirSessaoNoServidor();
+}
+
+/**
+ * Perfil PROPRIETARIO: mesmo painel do gestor (os números já vêm
+ * filtrados pelo servidor), placas liberadas no topo, e cartões
+ * que levariam a telas que ele não tem deixam de ser clicáveis.
+ */
+function iniciarPainelProprietario() {
+  document.querySelectorAll('[data-destino-secao]').forEach(function (card) {
+    if (!document.getElementById('secao-' + card.getAttribute('data-destino-secao'))) {
+      card.removeAttribute('data-destino-secao');
+      card.classList.remove('kpi-clicavel');
+      card.removeAttribute('tabindex');
+      card.removeAttribute('role');
+    }
+  });
+
+  registrarCarregadorSecao('dashboard', carregarDashboardGestor);
+  carregarDashboardGestor();
+
+  chamarBackend('obterMeuAcessoProprietario').then(function (acesso) {
+    const secao = document.getElementById('secao-dashboard');
+    if (!secao) return;
+    const faixa = document.createElement('div');
+    faixa.className = 'faixa-placas-proprietario';
+    const placas = (acesso && acesso.placas) || [];
+    faixa.innerHTML = placas.length
+      ? '<span>Suas placas:</span>' + placas.map(function (p) { return '<span class="placa-chip">' + p + '</span>'; }).join('')
+      : '<span>Nenhuma placa liberada para você ainda. Fale com o gestor.</span>';
+    secao.insertBefore(faixa, secao.firstChild);
+  }).catch(function () { /* o painel continua funcionando */ });
 }
 
 /* ============================================================

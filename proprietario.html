@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <title>GestorFrota</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GestorFrota">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="GestorFrota">
+  <meta name="theme-color" content="#0f2a4f">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="assets/styles.css?v=3">
+  <script src="config.js?v=3"></script>
+  <script src="assets/api.js?v=3"></script>
+  <script src="assets/util.js?v=3"></script>
+  <script src="assets/ui.js?v=3"></script>
+  <script>
+    protegerPagina('PROPRIETARIO');
+    document.addEventListener('DOMContentLoaded', iniciarPaginaSistema);
+  </script>
+</head>
+<body>
+
+    <!-- ================= APLICAÇÃO PRINCIPAL ================= -->
+    <div id="app" class="app-shell" data-perfil="PROPRIETARIO">
+
+      <header class="topbar">
+        <button id="btn-toggle-menu" class="icon-btn only-mobile" aria-label="Abrir menu">
+          <i data-lucide="menu"></i>
+        </button>
+        <div class="topbar-titulo">
+          <i data-lucide="truck"></i>
+          <span data-campo="nomeEmpresa">GestorFrota</span>
+        </div>
+        <div class="topbar-usuario">
+          <button id="btn-tema" class="icon-btn" aria-label="Alternar tema">
+            <i data-lucide="moon"></i>
+          </button>
+          <div class="usuario-info">
+            <span class="usuario-nome" data-campo="usuarioNome"></span>
+            <span class="usuario-perfil" data-campo="usuarioPerfil"></span>
+          </div>
+          <button id="btn-sair" class="icon-btn" aria-label="Sair" title="Sair">
+            <i data-lucide="log-out"></i>
+          </button>
+        </div>
+      </header>
+
+      <div class="app-body">
+
+        <nav id="sidebar" class="sidebar">
+          <ul class="menu-lista">
+              <li><a href="#" class="menu-item ativo" data-secao="dashboard"><i data-lucide="layout-dashboard"></i><span>Painel</span></a></li>
+              <li><a href="#" class="menu-item" data-secao="viagens"><i data-lucide="route"></i><span>Viagens</span></a></li>
+              <li><a href="#" class="menu-item" data-secao="abastecimentos"><i data-lucide="fuel"></i><span>Abastecimentos</span></a></li>
+              <li><a href="#" class="menu-item" data-secao="despesas"><i data-lucide="receipt"></i><span>Despesas</span></a></li>
+              <li><a href="#" class="menu-item" data-secao="manutencoes"><i data-lucide="wrench"></i><span>Manutenções</span></a></li>
+              <li><a href="#" class="menu-item" data-secao="fechamentos"><i data-lucide="calculator"></i><span>Fechamentos</span></a></li>
+          </ul>
+        </nav>
+        <div id="overlay-sidebar" class="overlay-sidebar"></div>
+
+        <main class="conteudo">
+
+          <div id="loader-global" class="loader-global oculto">
+            <div class="spinner"></div>
+            <span>Carregando...</span>
+          </div>
+
+          <div id="toast-container" class="toast-container"></div>
+
+          <section id="secao-dashboard" class="secao">
+<div class="painel">
+  <div class="barra-filtro-periodo">
+    <div class="campo">
+      <label>Período — de</label>
+      <input type="text" id="dash-dataInicio" placeholder="dd/mm/aaaa">
+    </div>
+    <div class="campo">
+      <label>até</label>
+      <input type="text" id="dash-dataFim" placeholder="dd/mm/aaaa">
+    </div>
+    <button type="button" class="btn btn-primario" id="btn-aplicar-periodo-dashboard">Aplicar</button>
+    <span id="dash-periodo-aplicado" style="font-size:12px;color:var(--cor-texto-suave);align-self:center;"></span>
+  </div>
+  <p style="font-size:12px;color:var(--cor-texto-suave);margin:8px 0 0;">
+    O período afeta apenas faturamento, despesa e resultado líquido. Os demais indicadores (veículos, viagens em andamento, pendências) são sempre em tempo real.
+  </p>
+</div>
+
+<div class="grid-kpis" id="kpis-dashboard">
+  <div class="kpi-card kpi-clicavel" data-destino-secao="veiculos">
+    <span class="kpi-label">Veículos ativos</span>
+    <span class="kpi-valor" data-kpi="totalVeiculosAtivos">—</span>
+  </div>
+  <div class="kpi-card sucesso kpi-clicavel" data-destino-secao="viagens">
+    <span class="kpi-label">Faturamento do período (frete das viagens concluídas)</span>
+    <span class="kpi-valor" data-kpi="faturamentoMes">—</span>
+  </div>
+  <div class="kpi-card sucesso kpi-clicavel" data-destino-secao="financeiro">
+    <span class="kpi-label">Recebido do cliente no período (caixa)</span>
+    <span class="kpi-valor" data-kpi="recebidoClienteMes">—</span>
+  </div>
+  <div class="kpi-card alerta kpi-clicavel" data-destino-secao="financeiro">
+    <span class="kpi-label">Fretes a receber (saldo em aberto)</span>
+    <span class="kpi-valor" data-kpi="aReceberFretes">—</span>
+  </div>
+  <div class="kpi-card critico kpi-clicavel" data-destino-secao="despesas">
+    <span class="kpi-label">Despesa do período</span>
+    <span class="kpi-valor" data-kpi="despesaMes">—</span>
+  </div>
+  <div class="kpi-card kpi-clicavel" data-destino-secao="fechamentos">
+    <span class="kpi-label">Resultado líquido do período</span>
+    <span class="kpi-valor" data-kpi="resultadoLiquidoMes">—</span>
+  </div>
+  <div class="kpi-card kpi-clicavel" data-destino-secao="relatorios">
+    <span class="kpi-label">Saldo fundo de reserva</span>
+    <span class="kpi-valor" data-kpi="saldoFundoReserva">—</span>
+  </div>
+  <div class="kpi-card alerta kpi-clicavel" data-destino-secao="manutencoes">
+    <span class="kpi-label">Manutenções críticas</span>
+    <span class="kpi-valor" data-kpi="manutencoesCriticas">—</span>
+  </div>
+  <div class="kpi-card alerta kpi-clicavel" data-destino-secao="relatorios" data-destino-filtro-id="rl-tipo" data-destino-filtro-valor="vencimentosDocumentais" data-destino-gerar-relatorio="true">
+    <span class="kpi-label">Documentos a vencer</span>
+    <span class="kpi-valor" data-kpi="documentosProximosVencimento">—</span>
+  </div>
+  <div class="kpi-card kpi-clicavel" data-destino-secao="viagens" data-destino-filtro-id="filtro-status-viagem" data-destino-filtro-valor="EM_ANDAMENTO">
+    <span class="kpi-label">Viagens em andamento</span>
+    <span class="kpi-valor" data-kpi="viagensEmAndamento">—</span>
+  </div>
+  <div class="kpi-card alerta kpi-clicavel" data-destino-secao="despesas" data-destino-filtro-id="filtro-status-despesa" data-destino-filtro-valor="PENDENTE">
+    <span class="kpi-label">Despesas pend. aprovação</span>
+    <span class="kpi-valor" data-kpi="despesasPendentes">—</span>
+  </div>
+</div>
+
+<div class="grid-duas-colunas">
+  <div class="painel">
+    <h3>Receita x Despesa (últimos 6 meses)</h3>
+    <canvas id="grafico-receita-despesa" height="220"></canvas>
+  </div>
+
+  <div class="painel">
+    <h3>Status da frota</h3>
+    <table class="tabela-simples" id="tabela-status-frota">
+      <tbody>
+        <tr><td>Disponível</td><td data-status="DISPONIVEL">—</td></tr>
+        <tr><td>Em viagem</td><td data-status="EM_VIAGEM">—</td></tr>
+        <tr><td>Manutenção</td><td data-status="MANUTENCAO">—</td></tr>
+        <tr><td>Bloqueado</td><td data-status="BLOQUEADO">—</td></tr>
+        <tr><td>Inativo</td><td data-status="INATIVO">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="painel">
+  <h3>Ranking de resultado líquido por caminhão</h3>
+  <table class="tabela-simples" id="tabela-ranking-resultado">
+    <thead>
+      <tr><th>Placa</th><th>Resultado líquido acumulado</th></tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="2" style="color:var(--cor-texto-suave);">Carregando...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="painel">
+  <h3>Alertas prioritários</h3>
+  <div id="lista-alertas-dashboard"><p style="color:var(--cor-texto-suave);font-size:13px;">Carregando...</p></div>
+</div>
+          </section>
+          <section id="secao-viagens" class="secao oculto">
+<div class="painel">
+  <div class="form-grid">
+    <div id="filtro-veiculo-viagem-container"></div>
+    <div id="filtro-motorista-viagem-container"></div>
+    <div class="campo">
+      <label>Status</label>
+      <select id="filtro-status-viagem">
+        <option value="TODOS">Todos os status</option>
+        <option value="PLANEJADA">Planejadas</option>
+        <option value="EM_ANDAMENTO">Em andamento</option>
+        <option value="CONCLUIDA">Concluídas</option>
+        <option value="CANCELADA">Canceladas</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label>Rota (origem ou destino)</label>
+      <input type="text" id="filtro-rota-viagem" class="campo-busca" placeholder="Ex: Poços de Caldas">
+    </div>
+    <div class="campo">
+      <label>Período — de</label>
+      <input type="text" id="filtro-dataInicio-viagem" placeholder="dd/mm/aaaa">
+    </div>
+    <div class="campo">
+      <label>até</label>
+      <input type="text" id="filtro-dataFim-viagem" placeholder="dd/mm/aaaa">
+    </div>
+  </div>
+  <div class="form-acoes">
+    <button type="button" class="btn btn-secundario" id="btn-limpar-filtros-viagem">Limpar filtros</button>
+    <button type="button" class="btn btn-primario" id="btn-aplicar-filtros-viagem">Filtrar</button>
+  </div>
+</div>
+
+<div class="barra-acoes-secao" style="margin-top:14px;">
+  <button class="btn btn-primario" id="btn-nova-viagem">
+    <i data-lucide="plus" style="width:16px;height:16px;vertical-align:-3px;margin-right:4px;"></i>
+    Nova viagem
+  </button>
+</div>
+
+<div class="painel tabela-wrapper">
+  <table class="tabela-simples" id="tabela-viagens">
+    <thead>
+      <tr>
+        <th>Nº</th>
+        <th>Placa</th>
+        <th>Motorista</th>
+        <th>Cliente</th>
+        <th>Rota</th>
+        <th>Saída / Chegada</th>
+        <th>Tempo gasto</th>
+        <th>Km rodado</th>
+        <th>Frete</th>
+        <th>Comissão motorista</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="12" style="color:var(--cor-texto-suave);">Carregando...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  registrarCarregadorSecao('viagens', carregarViagensGestor);
+
+  document.addEventListener('DOMContentLoaded', function () {
+    Promise.all([
+      executar('listarVeiculosParaSelectSimples'),
+      executar('listarMotoristasParaSelect')
+    ]).then(function (resultados) {
+      const optionsVeiculos = resultados[0].map(function (v) { return '<option value="' + v.idVeiculo + '">' + v.placa + '</option>'; }).join('');
+      const optionsMotoristas = resultados[1].map(function (m) { return '<option value="' + m.idMotorista + '">' + m.nome + '</option>'; }).join('');
+      document.getElementById('filtro-veiculo-viagem-container').innerHTML =
+        campoSelect('Placa', 'filtro-idVeiculo-viagem', '<option value="">Todas</option>' + optionsVeiculos);
+      document.getElementById('filtro-motorista-viagem-container').innerHTML =
+        campoSelect('Motorista', 'filtro-idMotorista-viagem', '<option value="">Todos</option>' + optionsMotoristas);
+    });
+
+    document.getElementById('btn-aplicar-filtros-viagem').addEventListener('click', carregarViagensGestor);
+    document.getElementById('btn-limpar-filtros-viagem').addEventListener('click', function () {
+      document.getElementById('filtro-idVeiculo-viagem').value = '';
+      document.getElementById('filtro-idMotorista-viagem').value = '';
+      document.getElementById('filtro-status-viagem').value = 'TODOS';
+      document.getElementById('filtro-rota-viagem').value = '';
+      document.getElementById('filtro-dataInicio-viagem').value = '';
+      document.getElementById('filtro-dataFim-viagem').value = '';
+      carregarViagensGestor();
+    });
+
+    const btnNova = document.getElementById('btn-nova-viagem');
+    if (btnNova) btnNova.addEventListener('click', function () { abrirFormularioViagem(null); });
+  });
+
+  function carregarViagensGestor() {
+    const status = document.getElementById('filtro-status-viagem').value;
+    const idVeiculo = document.getElementById('filtro-idVeiculo-viagem') ? document.getElementById('filtro-idVeiculo-viagem').value : '';
+    const idMotorista = document.getElementById('filtro-idMotorista-viagem') ? document.getElementById('filtro-idMotorista-viagem').value : '';
+    const rota = document.getElementById('filtro-rota-viagem').value;
+    const dataInicio = document.getElementById('filtro-dataInicio-viagem').value;
+    const dataFim = document.getElementById('filtro-dataFim-viagem').value;
+    executar('listarViagens', status, idVeiculo, dataInicio, dataFim, idMotorista, rota).then(renderizarTabelaViagens);
+  }
+
+  function classeBadgeViagem(status) {
+    if (status === 'CONCLUIDA') return 'badge-sucesso';
+    if (status === 'CANCELADA') return 'badge-critico';
+    if (status === 'EM_ANDAMENTO') return 'badge-alerta';
+    return 'badge-alerta';
+  }
+
+  function renderizarTabelaViagens(lista) {
+    const tbody = document.querySelector('#tabela-viagens tbody');
+    if (!lista || lista.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="12" style="color:var(--cor-texto-suave);">Nenhuma viagem encontrada.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = lista.map(function (v) {
+      let acoes = '<button class="btn-icone-tabela" title="Editar" onclick="abrirFormularioViagem(\'' + v.idViagem + '\')"><i data-lucide="pencil"></i></button>';
+
+      if (v.statusAprovacao === 'PENDENTE') {
+        acoes += '<button class="btn-icone-tabela" title="Aprovar viagem" onclick="aprovarViagemAcao(\'' + v.idViagem + '\')"><i data-lucide="check-circle"></i></button>';
+        acoes += '<button class="btn-icone-tabela" title="Rejeitar viagem" onclick="rejeitarViagemAcao(\'' + v.idViagem + '\')"><i data-lucide="x-circle"></i></button>';
+      } else if (v.statusViagem === 'PLANEJADA') {
+        acoes += '<button class="btn-icone-tabela" title="Iniciar viagem (uso do motorista; gestor só em caso de exceção)" onclick="abrirFormularioIniciarViagem(\'' + v.idViagem + '\')"><i data-lucide="play"></i></button>';
+        acoes += '<button class="btn-icone-tabela" title="Cancelar" onclick="cancelarViagemAcao(\'' + v.idViagem + '\')"><i data-lucide="x"></i></button>';
+      }
+      if (v.statusViagem === 'EM_ANDAMENTO') {
+        acoes += '<button class="btn-icone-tabela" title="Encerrar viagem (uso do motorista; gestor só em caso de exceção)" onclick="abrirFormularioEncerrarViagem(\'' + v.idViagem + '\')"><i data-lucide="check-circle"></i></button>';
+        acoes += '<button class="btn-icone-tabela" title="Ajustar km (rastreador)" onclick="abrirFormularioAjustarKm(\'' + v.idViagem + '\', \'' + (v.kmSaida || '') + '\', \'' + (v.kmChegada || '') + '\')"><i data-lucide="gauge"></i></button>';
+        acoes += '<button class="btn-icone-tabela" title="Acompanhar (parcial)" onclick="abrirPrestacaoContasViagemModal(\'' + v.idViagem + '\')"><i data-lucide="receipt"></i></button>';
+        acoes += '<button class="btn-icone-tabela" title="Adicionar repasse operacional" onclick="abrirFormularioAdicionarRepasse(\'' + v.idViagem + '\')"><i data-lucide="wallet"></i></button>';
+        acoes += '<button class="btn-icone-tabela" title="Cancelar" onclick="cancelarViagemAcao(\'' + v.idViagem + '\')"><i data-lucide="x"></i></button>';
+      }
+      if (v.statusViagem === 'PLANEJADA' && v.statusAprovacao !== 'PENDENTE') {
+        acoes += '<button class="btn-icone-tabela" title="Adicionar repasse operacional" onclick="abrirFormularioAdicionarRepasse(\'' + v.idViagem + '\')"><i data-lucide="wallet"></i></button>';
+      }
+      if (v.statusViagem === 'CONCLUIDA') {
+        acoes += '<button class="btn-icone-tabela" title="Ajustar km (rastreador)" onclick="abrirFormularioAjustarKm(\'' + v.idViagem + '\', \'' + (v.kmSaida || '') + '\', \'' + (v.kmChegada || '') + '\')"><i data-lucide="gauge"></i></button>';
+        acoes += '<button class="btn-icone-tabela" title="Prestação de contas" onclick="abrirPrestacaoContasViagemModal(\'' + v.idViagem + '\')"><i data-lucide="receipt"></i></button>';
+      }
+
+      if (v.statusAprovacao !== 'PENDENTE' && v.statusViagem !== 'CANCELADA' && v.statusViagem !== 'REJEITADA') {
+        acoes += '<button class="btn-icone-tabela" title="Pagamentos do cliente (adiantamento / saldo do frete)" onclick="abrirPagamentosFreteModal(\'' + v.idViagem + '\', carregarViagensGestor)"><i data-lucide="banknote"></i></button>';
+      }
+
+      const saidaFmt = v.dataSaida ? new Date(v.dataSaida).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+      const chegadaFmt = v.dataChegada ? new Date(v.dataChegada).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+      const tempoGasto = v.duracaoHoras !== null && v.duracaoHoras !== undefined ? v.duracaoHoras + ' h' : '-';
+      const kmRodadoTxt = v.kmRodado
+        ? Number(v.kmRodado).toLocaleString('pt-BR') + ' km' +
+          (v.kmChegada ? '<br><span style="font-size:11px;color:var(--cor-texto-suave);">Odômetro final: ' + Number(v.kmChegada).toLocaleString('pt-BR') + ' km</span>' : '')
+        : '-';
+
+      const statusBadge = v.statusAprovacao === 'PENDENTE'
+        ? '<span class="badge badge-alerta">Aguardando aprovação' + (v.solicitadaPorMotorista ? ' (motorista)' : '') + '</span>'
+        : '<span class="badge ' + classeBadgeViagem(v.statusViagem) + '">' + v.statusViagem.replace('_', ' ') + '</span>';
+
+      return '<tr>' +
+        '<td>' + v.numeroViagem + '</td>' +
+        '<td><strong>' + v.placa + '</strong></td>' +
+        '<td>' + v.nomeMotorista + '</td>' +
+        '<td>' + v.cliente + '</td>' +
+        '<td>' + v.origem + ' → ' + v.destino + '</td>' +
+        '<td style="font-size:12px;">' + saidaFmt + '<br>' + chegadaFmt + '</td>' +
+        '<td>' + tempoGasto + '</td>' +
+        '<td>' + kmRodadoTxt + '</td>' +
+        '<td>' + formatarMoedaFrontend(v.valorFrete) +
+          (v.valorRecebidoFrete > 0
+            ? '<br><span style="font-size:11px;color:var(--cor-texto-suave);">Recebido: ' + formatarMoedaFrontend(v.valorRecebidoFrete) + '</span>' +
+              (v.saldoFrete > 0 ? '<br><span style="font-size:11px;color:var(--cor-alerta);">Saldo: ' + formatarMoedaFrontend(v.saldoFrete) + '</span>' : '<br><span style="font-size:11px;color:var(--cor-sucesso);">Quitado</span>')
+            : '') + '</td>' +
+        '<td>' + (v.percentualMotorista > 0 ? v.percentualMotorista + '% (' + formatarMoedaFrontend(v.valorMotorista) + ')' : '-') + '</td>' +
+        '<td>' + statusBadge + '</td>' +
+        '<td>' + acoes + '</td>' +
+      '</tr>';
+    }).join('');
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function abrirFormularioViagem(idViagem) {
+    Promise.all([
+      executar('listarVeiculosParaSelectSimples'),
+      executar('listarMotoristasParaSelect'),
+      idViagem ? executar('obterViagemPorId', idViagem) : Promise.resolve(null)
+    ]).then(function (resultados) {
+      renderizarFormularioViagem(resultados[0], resultados[1], resultados[2]);
+    });
+  }
+
+  function renderizarFormularioViagem(veiculos, motoristas, viagem) {
+    const v = viagem || {};
+    const emEdicao = !!v.idViagem;
+
+    const optionsVeiculos = veiculos.map(function (x) {
+      const sel = v.idVeiculo === x.idVeiculo ? 'selected' : '';
+      return '<option value="' + x.idVeiculo + '" ' + sel + '>' + x.placa + '</option>';
+    }).join('');
+    const optionsMotoristasTodos = motoristas.map(function (x) {
+      const sel = v.idMotorista === x.idMotorista ? 'selected' : '';
+      return '<option value="' + x.idMotorista + '" ' + sel + '>' + x.nome + '</option>';
+    }).join('');
+
+    const camposVeiculoMotorista = emEdicao
+      ? ''
+      : campoSelect('Veículo *', 'vg-idVeiculo', '<option value="">Selecione...</option>' + optionsVeiculos) +
+        '<div id="vg-motorista-container">' + campoSelect('Motorista *', 'vg-idMotorista', '<option value="">Selecione o veículo primeiro...</option>' + optionsMotoristasTodos) + '</div>';
+
+    const horaSaidaAtual = v.dataPrevistaSaida ? new Date(v.dataPrevistaSaida).toTimeString().slice(0, 5) : '';
+    const horaChegadaAtual = v.dataPrevistaChegada ? new Date(v.dataPrevistaChegada).toTimeString().slice(0, 5) : '';
+
+    const html =
+      '<form id="form-viagem" class="form-grid">' +
+        '<input type="hidden" id="vg-idViagem" value="' + (v.idViagem || '') + '">' +
+        camposVeiculoMotorista +
+        '<div class="campo-full" id="vg-aviso-contrato"></div>' +
+
+        campoTexto('Cliente *', 'vg-cliente', v.cliente) +
+        '<div></div>' +
+
+        campoTexto('Origem (endereço completo) *', 'vg-origem', v.origem) +
+        campoTexto('Destino (endereço completo) *', 'vg-destino', v.destino) +
+
+        campoData('Data prevista de saída', 'vg-dataPrevistaSaida', v.dataPrevistaSaida) +
+        '<div class="campo"><label>Hora prevista de saída</label><input type="time" id="vg-horaPrevistaSaida" value="' + horaSaidaAtual + '"></div>' +
+
+        campoData('Data prevista de chegada', 'vg-dataPrevistaChegada', v.dataPrevistaChegada) +
+        '<div class="campo"><label>Hora prevista de chegada</label><input type="time" id="vg-horaPrevistaChegada" value="' + horaChegadaAtual + '"></div>' +
+
+        campoNumero('Valor do frete (R$)', 'vg-valorFrete', v.valorFrete) +
+        campoNumero('Adiantamento motorista (R$)', 'vg-adiantamentoMotorista', v.adiantamentoMotorista) +
+        campoNumero('Repasse operacional (R$) — para ele pagar combustível/despesas', 'vg-valorRepasseOperacional', v.valorRepasseOperacional) +
+
+        campoNumero('% do motorista sobre o frete (comissão)', 'vg-percentualMotorista', v.percentualMotorista) +
+        '<div class="campo"><label>Valor do motorista (calculado)</label><input type="text" id="vg-valorMotoristaPreview" value="' + (v.valorMotorista ? formatarMoedaFrontend(v.valorMotorista) : 'R$ 0,00') + '" disabled></div>' +
+
+        campoNumero('Pedágio previsto (R$)', 'vg-pedagioPrevisto', v.pedagioPrevisto) +
+        '<input type="hidden" id="vg-distanciaEstimadaKm" value="' + (v.distanciaEstimadaKm || '') + '">' +
+
+        '<div class="campo-full" id="area-estimativa-viagem"></div>' +
+
+        campoTextarea('Observações', 'vg-observacoes', v.observacoes) +
+
+        '<div class="form-acoes">' +
+          '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primario">Salvar</button>' +
+        '</div>' +
+      '</form>';
+
+    const corpo = abrirModal(emEdicao ? 'Editar viagem' : 'Nova viagem', html);
+
+    if (!emEdicao) {
+      document.getElementById('vg-idVeiculo').addEventListener('change', function () {
+        const idVeiculo = this.value;
+        if (!idVeiculo) return;
+        executar('listarMotoristasVinculadosVeiculo', idVeiculo).then(function (vinculados) {
+          const container = document.getElementById('vg-motorista-container');
+          if (vinculados && vinculados.length > 0) {
+            const opts = vinculados.map(function (m) { return '<option value="' + m.idMotorista + '">' + m.nome + '</option>'; }).join('');
+            container.innerHTML = campoSelect('Motorista *', 'vg-idMotorista', (vinculados.length > 1 ? '<option value="">Selecione...</option>' : '') + opts);
+          } else {
+            container.innerHTML = campoSelect('Motorista *', 'vg-idMotorista', '<option value="">Selecione...</option>' + optionsMotoristasTodos);
+          }
+        });
+
+        // Aviso informativo — NUNCA bloqueia a criação da viagem,
+        // é só um lembrete de que o veículo tem contrato ativo.
+        const avisoContainer = document.getElementById('vg-aviso-contrato');
+        avisoContainer.innerHTML = '';
+        executar('obterContratoAtivoResumoVeiculo', idVeiculo).then(function (contrato) {
+          if (contrato) {
+            avisoContainer.innerHTML = '<p style="font-size:12px;background:var(--cor-alerta-fundo);color:var(--cor-alerta);padding:8px 10px;border-radius:8px;margin:0;">' +
+              '⚠ Este veículo tem o contrato ' + contrato.numeroContrato + ' ATIVO com ' + contrato.cliente + ' (' + contrato.descricaoServico + '). ' +
+              'Isso não impede cadastrar esta viagem avulsa.</p>';
+          }
+        });
+      });
+
+      const acionarEstimativa = function () {
+        const origem = document.getElementById('vg-origem').value;
+        const destino = document.getElementById('vg-destino').value;
+        const idVeiculo = document.getElementById('vg-idVeiculo').value;
+        if (!origem || !destino) return;
+        const area = document.getElementById('area-estimativa-viagem');
+        area.innerHTML = '<p style="font-size:12px;color:var(--cor-texto-suave);">Calculando distância estimada...</p>';
+        executar('calcularEstimativaViagem', origem, destino, idVeiculo).then(function (estimativa) {
+          document.getElementById('vg-distanciaEstimadaKm').value = estimativa.distanciaKm || '';
+          if (estimativa.aviso) {
+            area.innerHTML = '<p style="font-size:12px;color:var(--cor-texto-suave);">' + estimativa.aviso + '</p>';
+            return;
+          }
+          let texto = '<div class="painel" style="background:var(--cor-fundo);padding:12px;font-size:13px;">' +
+            '<strong>Distância estimada:</strong> ' + estimativa.distanciaKm + ' km' +
+            (estimativa.duracaoEstimadaMin ? ' (' + Math.round(estimativa.duracaoEstimadaMin / 60 * 10) / 10 + 'h de viagem)' : '');
+          if (estimativa.litrosEstimados) {
+            texto += '<br><strong>Combustível estimado:</strong> ' + estimativa.litrosEstimados + ' L' +
+              (estimativa.custoEstimado ? ' (~' + formatarMoedaFrontend(estimativa.custoEstimado) + ')' : '') +
+              ' — baseado no consumo médio deste veículo (' + estimativa.consumoMedioKmL + ' km/l)';
+          } else {
+            texto += '<br><span style="color:var(--cor-texto-suave);">Sem histórico de abastecimento suficiente para estimar consumo.</span>';
+          }
+          texto += '</div>';
+          area.innerHTML = texto;
+        });
+      };
+      document.getElementById('vg-destino').addEventListener('blur', acionarEstimativa);
+    }
+
+    const atualizarPreviewValorMotorista = function () {
+      const frete = Number(document.getElementById('vg-valorFrete').value) || 0;
+      const percentual = Number(document.getElementById('vg-percentualMotorista').value) || 0;
+      const preview = document.getElementById('vg-valorMotoristaPreview');
+      if (preview) preview.value = formatarMoedaFrontend(Math.round(frete * (percentual / 100) * 100) / 100);
+    };
+    document.getElementById('vg-valorFrete').addEventListener('input', atualizarPreviewValorMotorista);
+    document.getElementById('vg-percentualMotorista').addEventListener('input', atualizarPreviewValorMotorista);
+
+    corpo.querySelector('#form-viagem').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      const dados = {
+        idVeiculo: document.getElementById('vg-idVeiculo') ? document.getElementById('vg-idVeiculo').value : undefined,
+        idMotorista: document.getElementById('vg-idMotorista') ? document.getElementById('vg-idMotorista').value : undefined,
+        cliente: document.getElementById('vg-cliente').value,
+        origem: document.getElementById('vg-origem').value,
+        destino: document.getElementById('vg-destino').value,
+        dataPrevistaSaida: document.getElementById('vg-dataPrevistaSaida').value,
+        horaPrevistaSaida: document.getElementById('vg-horaPrevistaSaida').value,
+        dataPrevistaChegada: document.getElementById('vg-dataPrevistaChegada').value,
+        horaPrevistaChegada: document.getElementById('vg-horaPrevistaChegada').value,
+        valorFrete: document.getElementById('vg-valorFrete').value,
+        adiantamentoMotorista: document.getElementById('vg-adiantamentoMotorista').value,
+        valorRepasseOperacional: document.getElementById('vg-valorRepasseOperacional').value,
+        pedagioPrevisto: document.getElementById('vg-pedagioPrevisto').value,
+        distanciaEstimadaKm: document.getElementById('vg-distanciaEstimadaKm').value,
+        percentualMotorista: document.getElementById('vg-percentualMotorista').value,
+        observacoes: document.getElementById('vg-observacoes').value
+      };
+
+      const chamada = emEdicao
+        ? executar('editarViagem', document.getElementById('vg-idViagem').value, dados)
+        : executar('criarViagem', dados);
+
+      chamada.then(function () {
+        mostrarToast('Viagem salva com sucesso.', 'sucesso');
+        fecharModal();
+        carregarViagensGestor();
+      });
+    });
+  }
+
+  function abrirFormularioIniciarViagem(idViagem) {
+    const html =
+      '<p style="font-size:13px;color:var(--cor-texto-suave);">Normalmente é o próprio motorista quem registra isso pelo painel dele. Use esta opção só em caso de exceção.</p>' +
+      '<form id="form-iniciar-viagem" class="form-grid">' +
+        campoNumero('Km de saída *', 'iv-kmSaida', '') +
+        '<div class="form-acoes">' +
+          '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primario">Iniciar viagem</button>' +
+        '</div>' +
+      '</form>';
+
+    const corpo = abrirModal('Iniciar viagem (gestor)', html);
+    corpo.querySelector('#form-iniciar-viagem').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      const dados = { kmSaida: document.getElementById('iv-kmSaida').value };
+      executar('iniciarViagem', idViagem, dados).then(function () {
+        mostrarToast('Viagem iniciada. Veículo marcado como em viagem.', 'sucesso');
+        fecharModal();
+        carregarViagensGestor();
+      });
+    });
+  }
+
+  function abrirFormularioEncerrarViagem(idViagem) {
+    const html =
+      '<p style="font-size:13px;color:var(--cor-texto-suave);">Normalmente é o próprio motorista quem registra isso pelo painel dele. Use esta opção só em caso de exceção.</p>' +
+      '<form id="form-encerrar-viagem" class="form-grid">' +
+        campoNumero('Km de chegada *', 'ev-kmChegada', '') +
+        campoNumero('Valor do frete final (R$) *', 'ev-valorFrete', '') +
+        campoNumero('Pedágio real (R$)', 'ev-pedagioReal', 0) +
+        campoTexto('URL do comprovante de entrega', 'ev-comprovanteEntregaUrl', '') +
+        '<div class="form-acoes">' +
+          '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primario">Encerrar viagem</button>' +
+        '</div>' +
+      '</form>';
+
+    const corpo = abrirModal('Encerrar viagem (gestor)', html);
+    corpo.querySelector('#form-encerrar-viagem').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      const dados = {
+        kmChegada: document.getElementById('ev-kmChegada').value,
+        valorFrete: document.getElementById('ev-valorFrete').value,
+        pedagioReal: document.getElementById('ev-pedagioReal').value,
+        comprovanteEntregaUrl: document.getElementById('ev-comprovanteEntregaUrl').value
+      };
+      executar('encerrarViagem', idViagem, dados).then(function () {
+        mostrarToast('Viagem encerrada com sucesso.', 'sucesso');
+        fecharModal();
+        carregarViagensGestor();
+      });
+    });
+  }
+
+  function abrirFormularioAjustarKm(idViagem, kmSaidaAtual, kmChegadaAtual) {
+    const html =
+      '<p style="font-size:13px;color:var(--cor-texto-suave);">Use para corrigir/lançar o km quando o motorista não registrou — por exemplo, usando os dados do rastreador do veículo.</p>' +
+      '<form id="form-ajustar-km" class="form-grid">' +
+        campoNumero('Km de saída', 'ak-kmSaida', kmSaidaAtual) +
+        campoNumero('Km de chegada', 'ak-kmChegada', kmChegadaAtual) +
+        '<div class="form-acoes">' +
+          '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primario">Salvar ajuste</button>' +
+        '</div>' +
+      '</form>';
+
+    const corpo = abrirModal('Ajustar km (dados do rastreador)', html);
+    corpo.querySelector('#form-ajustar-km').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      const dados = {
+        kmSaida: document.getElementById('ak-kmSaida').value,
+        kmChegada: document.getElementById('ak-kmChegada').value
+      };
+      executar('ajustarKmViagem', idViagem, dados).then(function () {
+        mostrarToast('Km ajustado com sucesso.', 'sucesso');
+        fecharModal();
+        carregarViagensGestor();
+      });
+    });
+  }
+
+  function cancelarViagemAcao(idViagem) {
+    const html =
+      '<div class="campo campo-full"><label>Motivo do cancelamento *</label><textarea id="motivo-cancelamento-viagem" rows="3"></textarea></div>' +
+      '<div class="form-acoes">' +
+        '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Voltar</button>' +
+        '<button type="button" class="btn btn-perigo" id="btn-confirmar-cancelamento-viagem">Cancelar viagem</button>' +
+      '</div>';
+
+    const corpo = abrirModal('Cancelar viagem', html);
+    corpo.querySelector('#btn-confirmar-cancelamento-viagem').addEventListener('click', function () {
+      const motivo = document.getElementById('motivo-cancelamento-viagem').value;
+      if (!motivo) { mostrarToast('Informe o motivo do cancelamento.', 'erro'); return; }
+      executar('cancelarViagem', idViagem, motivo).then(function () {
+        mostrarToast('Viagem cancelada.', 'sucesso');
+        fecharModal();
+        carregarViagensGestor();
+      });
+    });
+  }
+
+  /**
+   * Abre a prestação de contas de uma viagem específica direto
+   * daqui, num modal — reaproveita a mesma renderização usada na
+   * aba Fechamento (renderizarPrestacaoContasViagem), já que as
+   * duas telas compartilham o mesmo escopo de JavaScript na página.
+   */
+  function abrirPrestacaoContasViagemModal(idViagem) {
+    executar('obterPrestacaoContasViagem', idViagem).then(function (dados) {
+      const corpo = abrirModal('Prestação de contas — ' + dados.viagem.numeroViagem, '<div id="pcv-modal-area"></div>');
+      renderizarPrestacaoContasViagem(dados, document.getElementById('pcv-modal-area'));
+    });
+  }
+
+  /**
+   * Aprova uma viagem que o motorista solicitou pelo painel dele —
+   * a partir daqui ele já consegue iniciar normalmente.
+   */
+  function aprovarViagemAcao(idViagem) {
+    executar('aprovarViagemSolicitada', idViagem).then(function () {
+      mostrarToast('Viagem aprovada.', 'sucesso');
+      carregarViagensGestor();
+    });
+  }
+
+  /**
+   * Rejeita uma viagem solicitada pelo motorista — ela é cancelada
+   * automaticamente, já que nunca chegou a ser válida.
+   */
+  function rejeitarViagemAcao(idViagem) {
+    const html =
+      '<div class="campo campo-full"><label>Motivo da rejeição *</label><textarea id="motivo-rejeicao-viagem" rows="3"></textarea></div>' +
+      '<div class="form-acoes">' +
+        '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Voltar</button>' +
+        '<button type="button" class="btn btn-perigo" id="btn-confirmar-rejeicao-viagem">Rejeitar viagem</button>' +
+      '</div>';
+
+    const corpo = abrirModal('Rejeitar viagem', html);
+    corpo.querySelector('#btn-confirmar-rejeicao-viagem').addEventListener('click', function () {
+      const motivo = document.getElementById('motivo-rejeicao-viagem').value;
+      if (!motivo) { mostrarToast('Informe o motivo da rejeição.', 'erro'); return; }
+      executar('rejeitarViagemSolicitada', idViagem, motivo).then(function () {
+        mostrarToast('Viagem rejeitada.', 'sucesso');
+        fecharModal();
+        carregarViagensGestor();
+      });
+    });
+  }
+
+  /**
+   * Manda mais repasse operacional numa viagem já em andamento (ou
+   * ainda planejada) — cobre o caso do valor inicial não ter sido
+   * suficiente.
+   */
+  function abrirFormularioAdicionarRepasse(idViagem) {
+    const html =
+      '<form id="form-adicionar-repasse" class="form-grid">' +
+        campoNumero('Valor adicional (R$) *', 'ar-valor', '') +
+        campoTexto('Motivo (opcional)', 'ar-motivo', '') +
+        '<div class="form-acoes">' +
+          '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primario">Enviar repasse adicional</button>' +
+        '</div>' +
+      '</form>';
+
+    const corpo = abrirModal('Adicionar repasse operacional', html);
+    corpo.querySelector('#form-adicionar-repasse').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      const valor = document.getElementById('ar-valor').value;
+      const motivo = document.getElementById('ar-motivo').value;
+      executar('adicionarRepasseOperacional', idViagem, valor, motivo).then(function () {
+        mostrarToast('Repasse adicional registrado.', 'sucesso');
+        fecharModal();
+        carregarViagensGestor();
+      });
+    });
+  }
+</script>
+          </section>
+          <section id="secao-abastecimentos" class="secao oculto">
+<div class="painel">
+  <div class="form-grid">
+    <div id="filtro-veiculo-abastecimento-container"></div>
+    <div class="campo">
+      <label>Período — de</label>
+      <input type="text" id="filtro-dataInicio-abastecimento" placeholder="dd/mm/aaaa">
+    </div>
+    <div class="campo">
+      <label>até</label>
+      <input type="text" id="filtro-dataFim-abastecimento" placeholder="dd/mm/aaaa">
+    </div>
+    <div class="form-acoes" style="align-items:flex-end;">
+      <button type="button" class="btn btn-primario" id="btn-aplicar-filtros-abastecimento">Aplicar</button>
+    </div>
+  </div>
+  <div id="area-dashboard-abastecimento"></div>
+</div>
+
+<div class="barra-acoes-secao" style="margin-top:14px;">
+  <select id="filtro-status-abastecimento" class="campo-busca">
+    <option value="PENDENTE">Pendentes</option>
+    <option value="APROVADO">Aprovados</option>
+    <option value="REJEITADO">Rejeitados</option>
+    <option value="TODOS">Todos</option>
+  </select>
+  <div>
+    <button class="btn btn-secundario" id="btn-imprimir-relatorio-abastecimento">
+      <i data-lucide="printer" style="width:16px;height:16px;vertical-align:-3px;margin-right:4px;"></i>
+      Imprimir relatório
+    </button>
+    <button class="btn btn-primario" id="btn-novo-abastecimento-gestor">
+      <i data-lucide="plus" style="width:16px;height:16px;vertical-align:-3px;margin-right:4px;"></i>
+      Novo lançamento
+    </button>
+  </div>
+</div>
+
+<div class="painel tabela-wrapper">
+  <table class="tabela-simples" id="tabela-abastecimentos">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Placa</th>
+        <th>Motorista</th>
+        <th>Combustível</th>
+        <th>Sistema</th>
+        <th>Km / Horímetro</th>
+        <th>Rodou desde o anterior</th>
+        <th>Litros</th>
+        <th>Valor total</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="9" style="color:var(--cor-texto-suave);">Carregando...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  let abastecimentosCache = [];
+  let dashboardAbastecimentoCache = null;
+
+  registrarCarregadorSecao('abastecimentos', carregarAbastecimentos);
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const hoje = new Date();
+    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    document.getElementById('filtro-dataInicio-abastecimento').value = inicioMes.toLocaleDateString('pt-BR');
+    document.getElementById('filtro-dataFim-abastecimento').value = hoje.toLocaleDateString('pt-BR');
+
+    executar('listarVeiculosParaSelectSimples').then(function (veiculos) {
+      const opts = veiculos.map(function (v) { return '<option value="' + v.idVeiculo + '">' + v.placa + '</option>'; }).join('');
+      document.getElementById('filtro-veiculo-abastecimento-container').innerHTML =
+        campoSelect('Placa', 'filtro-idVeiculo-abastecimento', '<option value="">Todas</option>' + opts);
+    });
+
+    document.getElementById('btn-aplicar-filtros-abastecimento').addEventListener('click', carregarAbastecimentos);
+    const filtro = document.getElementById('filtro-status-abastecimento');
+    if (filtro) filtro.addEventListener('change', carregarAbastecimentosGestor);
+
+    const btnNovo = document.getElementById('btn-novo-abastecimento-gestor');
+    if (btnNovo) btnNovo.addEventListener('click', function () { abrirFormularioAbastecimento(null); });
+
+    document.getElementById('btn-imprimir-relatorio-abastecimento').addEventListener('click', imprimirRelatorioAbastecimentos);
+
+  });
+
+  function carregarAbastecimentos() {
+    carregarDashboardAbastecimentos();
+    carregarAbastecimentosGestor();
+  }
+
+  function carregarDashboardAbastecimentos() {
+    const idVeiculo = document.getElementById('filtro-idVeiculo-abastecimento') ? document.getElementById('filtro-idVeiculo-abastecimento').value : '';
+    const dataInicio = document.getElementById('filtro-dataInicio-abastecimento').value;
+    const dataFim = document.getElementById('filtro-dataFim-abastecimento').value;
+    executar('obterDashboardAbastecimentos', idVeiculo, dataInicio, dataFim).then(renderizarDashboardAbastecimentos);
+  }
+
+  function renderizarDashboardAbastecimentos(d) {
+    dashboardAbastecimentoCache = d;
+    const area = document.getElementById('area-dashboard-abastecimento');
+    area.innerHTML =
+      '<div class="grid-kpis" style="margin-top:14px;">' +
+        '<div class="kpi-card">' +
+          '<span class="kpi-label">Total gasto no período</span>' +
+          '<span class="kpi-valor">' + formatarMoedaFrontend(d.totalValor) + '</span>' +
+        '</div>' +
+        '<div class="kpi-card">' +
+          '<span class="kpi-label">Combustível abastecido</span>' +
+          '<span class="kpi-valor">' + Number(d.totalLitros || 0).toLocaleString('pt-BR') + ' L</span>' +
+        '</div>' +
+        '<div class="kpi-card">' +
+          '<span class="kpi-label">Preço médio pago por litro</span>' +
+          '<span class="kpi-valor">' + (d.mediaPrecoLitro ? formatarMoedaFrontend(d.mediaPrecoLitro) : '-') + '</span>' +
+        '</div>' +
+        '<div class="kpi-card">' +
+          '<span class="kpi-label">Km rodados no período</span>' +
+          '<span class="kpi-valor">' + Number(d.kmRodadoPeriodo || 0).toLocaleString('pt-BR') + ' km</span>' +
+        '</div>' +
+      '</div>' +
+      '<p style="font-size:12px;color:var(--cor-texto-suave);margin-top:6px;">' + d.totalAbastecimentos + ' abastecimento(s) aprovado(s) considerado(s) — inclui todos os tipos (diesel, ARLA e refrigeração).</p>';
+  }
+
+  function carregarAbastecimentosGestor() {
+    const status = document.getElementById('filtro-status-abastecimento').value;
+    const idVeiculo = document.getElementById('filtro-idVeiculo-abastecimento') ? document.getElementById('filtro-idVeiculo-abastecimento').value : '';
+    const dataInicio = document.getElementById('filtro-dataInicio-abastecimento').value;
+    const dataFim = document.getElementById('filtro-dataFim-abastecimento').value;
+    executar('listarAbastecimentos', status, idVeiculo, dataInicio, dataFim).then(function (lista) {
+      abastecimentosCache = lista;
+      renderizarTabelaAbastecimentos(lista);
+    });
+  }
+
+  function classeBadgeValidacao(status) {
+    if (status === 'APROVADO') return 'badge-sucesso';
+    if (status === 'REJEITADO') return 'badge-critico';
+    return 'badge-alerta';
+  }
+
+  function renderizarTabelaAbastecimentos(lista) {
+    const tbody = document.querySelector('#tabela-abastecimentos tbody');
+    if (!lista || lista.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="11" style="color:var(--cor-texto-suave);">Nenhum abastecimento encontrado.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = lista.map(function (a) {
+      const dataFmt = a.data ? new Date(a.data).toLocaleDateString('pt-BR') : '-';
+      const linkMapa = (a.postoLatitude && a.postoLongitude)
+        ? ' <a href="https://www.google.com/maps?q=' + a.postoLatitude + ',' + a.postoLongitude + '" target="_blank" title="Ver local no mapa">📍</a>'
+        : '';
+      const ehVeiculo = a.tipoCombustivel !== 'ARLA32';
+      const btnCheio = ehVeiculo
+        ? '<button class="btn-icone-tabela" title="' + (a.tanqueCheio ? 'Desmarcar tanque cheio' : 'Marcar como tanque cheio') + '" onclick="alternarTanqueCheioAcao(\'' + a.idAbastecimento + '\', ' + (a.tanqueCheio ? 'false' : 'true') + ')">⛽</button>'
+        : '';
+      const acoes = btnCheio + ((a.statusValidacao === 'PENDENTE')
+        ? '<button class="btn-icone-tabela" title="Aprovar" onclick="aprovarAbastecimentoAcao(\'' + a.idAbastecimento + '\')"><i data-lucide="check"></i></button>' +
+          '<button class="btn-icone-tabela" title="Rejeitar" onclick="rejeitarAbastecimentoAcao(\'' + a.idAbastecimento + '\')"><i data-lucide="x"></i></button>'
+        : '');
+
+      const ehRefrig = a.sistemaAbastecido === 'REFRIGERACAO';
+      const medidorTxt = ehRefrig
+        ? (a.horimetro !== '' && a.horimetro !== null && a.horimetro !== undefined ? Number(a.horimetro).toLocaleString('pt-BR') + ' h' : '-')
+        : (a.kmOdometro !== '' && a.kmOdometro !== null && a.kmOdometro !== undefined ? Number(a.kmOdometro).toLocaleString('pt-BR') + ' km' : '-');
+      const rodouTxt = (a.rodadoDesdeAnterior === null || a.rodadoDesdeAnterior === undefined)
+        ? '<span style="color:var(--cor-texto-suave);">-</span>'
+        : '<strong>' + Number(a.rodadoDesdeAnterior).toLocaleString('pt-BR') + (ehRefrig ? ' h' : ' km') + '</strong>';
+
+      return '<tr>' +
+        '<td>' + dataFmt + '</td>' +
+        '<td><strong>' + a.placa + '</strong></td>' +
+        '<td>' + a.nomeMotorista + '</td>' +
+        '<td>' + a.tipoCombustivel + '</td>' +
+        '<td>' + (ehRefrig ? '❄️ Refrigeração' : 'Veículo') + '</td>' +
+        '<td>' + medidorTxt + '</td>' +
+        '<td>' + rodouTxt + '</td>' +
+        '<td>' + Number(a.litros).toLocaleString('pt-BR') + ' L' + (a.tanqueCheio ? ' <span class="badge badge-sucesso" title="Deixou o tanque cheio">⛽ cheio</span>' : '') + '</td>' +
+        '<td>' + formatarMoedaFrontend(a.valorTotal) + linkMapa + '</td>' +
+        '<td><span class="badge ' + classeBadgeValidacao(a.statusValidacao) + '">' + a.statusValidacao + '</span></td>' +
+        '<td>' + acoes + '</td>' +
+      '</tr>';
+    }).join('');
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function alternarTanqueCheioAcao(id, valor) {
+    executar('definirTanqueCheio', id, valor).then(function () {
+      mostrarToast(valor ? 'Marcado como tanque cheio.' : 'Marcação de tanque cheio removida.', 'sucesso');
+      carregarAbastecimentosGestor();
+    });
+  }
+
+  function aprovarAbastecimentoAcao(id) {
+    const abastecimento = abastecimentosCache.find(function (a) { return a.idAbastecimento === id; });
+
+    if (!abastecimento || !abastecimento.idViagem) {
+      executar('aprovarAbastecimento', id).then(function () {
+        mostrarToast('Abastecimento aprovado.', 'sucesso');
+        carregarAbastecimentosGestor();
+      });
+      return;
+    }
+
+    const html =
+      '<p style="font-size:13px;color:var(--cor-texto-suave);">Este abastecimento está vinculado a uma viagem. Confirme a origem do dinheiro usado para pagar:</p>' +
+      '<div class="campo campo-full">' +
+        '<label><input type="radio" name="origem-pagamento-abastecimento" value="true" checked> Pago com o repasse operacional que o motorista já recebeu para essa viagem</label><br>' +
+        '<label><input type="radio" name="origem-pagamento-abastecimento" value="false"> Recurso separado (não veio do repasse — ex: pago direto pela empresa)</label>' +
+      '</div>' +
+      '<div class="form-acoes">' +
+        '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+        '<button type="button" class="btn btn-primario" id="btn-confirmar-aprovacao-abastecimento">Aprovar</button>' +
+      '</div>';
+
+    const corpo = abrirModal('Aprovar abastecimento', html);
+    corpo.querySelector('#btn-confirmar-aprovacao-abastecimento').addEventListener('click', function () {
+      const pagoComRepasse = corpo.querySelector('input[name="origem-pagamento-abastecimento"]:checked').value;
+      executar('aprovarAbastecimento', id, pagoComRepasse).then(function () {
+        mostrarToast('Abastecimento aprovado.', 'sucesso');
+        fecharModal();
+        carregarAbastecimentosGestor();
+      });
+    });
+  }
+
+  function rejeitarAbastecimentoAcao(id) {
+    const html =
+      '<div class="campo campo-full"><label>Motivo da rejeição *</label><textarea id="motivo-rejeicao-abastecimento" rows="3"></textarea></div>' +
+      '<div class="form-acoes">' +
+        '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+        '<button type="button" class="btn btn-perigo" id="btn-confirmar-rejeicao">Rejeitar</button>' +
+      '</div>';
+
+    const corpo = abrirModal('Rejeitar abastecimento', html);
+    corpo.querySelector('#btn-confirmar-rejeicao').addEventListener('click', function () {
+      const motivo = document.getElementById('motivo-rejeicao-abastecimento').value;
+      if (!motivo) {
+        mostrarToast('Informe o motivo da rejeição.', 'erro');
+        return;
+      }
+      executar('rejeitarAbastecimento', id, motivo).then(function () {
+        mostrarToast('Abastecimento rejeitado.', 'sucesso');
+        fecharModal();
+        carregarAbastecimentosGestor();
+      });
+    });
+  }
+
+  /**
+   * Formulário de lançamento (reaproveitado também pelo painel do
+   * motorista, em MotoristaView.html, via mesma função global).
+   */
+  function abrirFormularioAbastecimento(idViagemPreSelecionada) {
+    executar('listarVeiculosParaSelectSimples').then(function (veiculos) {
+      const optionsVeiculos = veiculos.map(function (v) {
+        return '<option value="' + v.idVeiculo + '">' + v.placa + '</option>';
+      }).join('');
+
+      const optionsCombustivel = ['DIESEL_S10', 'DIESEL_S500', 'ARLA32', 'OUTRO'].map(function (c) {
+        return '<option value="' + c + '">' + c.replace('_', ' ') + '</option>';
+      }).join('');
+      const optionsSistema = [
+        { valor: 'VEICULO', rotulo: 'Veículo (tração/motor principal)' },
+        { valor: 'REFRIGERACAO', rotulo: 'Refrigeração (motor do baú câmara fria)' }
+      ].map(function (s) { return '<option value="' + s.valor + '">' + s.rotulo + '</option>'; }).join('');
+
+      const html =
+        '<form id="form-abastecimento" class="form-grid">' +
+          campoSelect('Veículo *', 'ab-idVeiculo', '<option value="">Selecione...</option>' + optionsVeiculos) +
+          campoData('Data', 'ab-data', new Date()) +
+
+          '<div class="campo-full" id="ab-referencia-container"></div>' +
+
+          campoSelect('Combustível *', 'ab-tipoCombustivel', optionsCombustivel) +
+          campoSelect('Sistema abastecido *', 'ab-sistemaAbastecido', optionsSistema) +
+
+          '<div id="ab-campo-km-container">' + campoNumero('Km do odômetro *', 'ab-kmOdometro', '') + '</div>' +
+          '<div id="ab-campo-horimetro-container" style="display:none;">' + campoNumero('Horímetro (horas) *', 'ab-horimetro', '') + '</div>' +
+          campoNumero('Litros *', 'ab-litros', '') +
+          '<div class="campo-full" id="ab-tanque-cheio-container">' + campoCheckbox('Este abastecimento deixou o <strong>tanque cheio</strong> (completou até a boca)', 'ab-tanqueCheio', false) + '</div>' +
+
+          campoNumero('Valor por litro (R$) *', 'ab-valorLitro', '') +
+          campoTexto('Posto', 'ab-posto', '') +
+
+          campoTexto('Cidade/UF', 'ab-cidadeUf', '') +
+          campoTexto('Nº do documento/nota', 'ab-numeroDocumento', '') +
+
+          campoTexto('URL do comprovante', 'ab-comprovanteUrl', '') +
+
+          '<div class="campo-full" id="ab-vincular-viagem-container"></div>' +
+          '<div class="campo-full" id="ab-origem-pagamento-container" style="display:none;">' +
+            '<label style="font-size:12px;color:var(--cor-texto-suave);font-weight:600;">Pago com o repasse operacional do motorista?</label>' +
+            '<div><label><input type="radio" name="ab-origem-pagamento" value="true" checked> Sim, veio do repasse</label> &nbsp; ' +
+            '<label><input type="radio" name="ab-origem-pagamento" value="false"> Não, recurso separado</label></div>' +
+          '</div>' +
+
+          campoTextarea('Observações', 'ab-observacoes', '') +
+
+          '<div class="form-acoes">' +
+            '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+            '<button type="submit" class="btn btn-primario">Registrar abastecimento</button>' +
+          '</div>' +
+        '</form>';
+
+      const corpo = abrirModal('Novo abastecimento', html);
+
+      document.getElementById('ab-sistemaAbastecido').addEventListener('change', function () {
+        const ehRefrigeracao = this.value === 'REFRIGERACAO';
+        document.getElementById('ab-campo-km-container').style.display = ehRefrigeracao ? 'none' : '';
+        document.getElementById('ab-campo-horimetro-container').style.display = ehRefrigeracao ? '' : 'none';
+      });
+
+      document.getElementById('ab-idVeiculo').addEventListener('change', function () {
+        const idVeiculo = this.value;
+        const container = document.getElementById('ab-vincular-viagem-container');
+        document.getElementById('ab-origem-pagamento-container').style.display = 'none';
+        const refContainer = document.getElementById('ab-referencia-container');
+        if (!idVeiculo) { container.innerHTML = ''; refContainer.innerHTML = ''; return; }
+
+        executar('obterReferenciaAbastecimento', idVeiculo).then(function (ref) {
+          refContainer.innerHTML = montarHtmlReferenciaAbastecimento(ref);
+        });
+
+        executar('listarViagensParaVincular', idVeiculo).then(function (viagens) {
+          if (!viagens || viagens.length === 0) { container.innerHTML = ''; return; }
+          const opts = viagens.map(function (v) {
+            return '<option value="' + v.idViagem + '">' + v.numeroViagem + ' — ' + v.origem + ' → ' + v.destino + ' (' + v.statusViagem + ')</option>';
+          }).join('');
+          container.innerHTML = campoSelect('Vincular à viagem (opcional)', 'ab-idViagem', '<option value="">Nenhuma</option>' + opts);
+          document.getElementById('ab-idViagem').addEventListener('change', function () {
+            document.getElementById('ab-origem-pagamento-container').style.display = this.value ? '' : 'none';
+          });
+        });
+      });
+
+      corpo.querySelector('#form-abastecimento').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        const campoIdViagem = document.getElementById('ab-idViagem');
+        const idViagemSelecionada = campoIdViagem ? campoIdViagem.value : (idViagemPreSelecionada || '');
+        const radioOrigem = corpo.querySelector('input[name="ab-origem-pagamento"]:checked');
+        const dados = {
+          idVeiculo: document.getElementById('ab-idVeiculo').value,
+          data: document.getElementById('ab-data').value,
+          tipoCombustivel: document.getElementById('ab-tipoCombustivel').value,
+          sistemaAbastecido: document.getElementById('ab-sistemaAbastecido').value,
+          kmOdometro: document.getElementById('ab-kmOdometro').value,
+          horimetro: document.getElementById('ab-horimetro').value,
+          litros: document.getElementById('ab-litros').value,
+          tanqueCheio: document.getElementById('ab-tanqueCheio').checked,
+          valorLitro: document.getElementById('ab-valorLitro').value,
+          posto: document.getElementById('ab-posto').value,
+          cidadeUf: document.getElementById('ab-cidadeUf').value,
+          numeroDocumento: document.getElementById('ab-numeroDocumento').value,
+          comprovanteUrl: document.getElementById('ab-comprovanteUrl').value,
+          observacoes: document.getElementById('ab-observacoes').value,
+          idViagem: idViagemSelecionada,
+          pagoComRepasse: idViagemSelecionada && radioOrigem ? radioOrigem.value : false
+        };
+        executar('registrarAbastecimento', dados).then(function () {
+          mostrarToast('Abastecimento registrado com sucesso. Aguardando aprovação.', 'sucesso');
+          fecharModal();
+          if (typeof carregarAbastecimentosGestor === 'function' && document.getElementById('tabela-abastecimentos')) {
+            carregarAbastecimentosGestor();
+          }
+          if (typeof carregarMeusAbastecimentos === 'function' && document.getElementById('lista-meus-abastecimentos')) {
+            carregarMeusAbastecimentos();
+          }
+        });
+      });
+    });
+  }
+
+  /**
+   * Gera um relatório imprimível com o dashboard e a lista de
+   * abastecimentos filtrados atualmente na tela (mesma placa,
+   * período e status já aplicados).
+   */
+  function imprimirRelatorioAbastecimentos() {
+    const idVeiculo = document.getElementById('filtro-idVeiculo-abastecimento') ? document.getElementById('filtro-idVeiculo-abastecimento').value : '';
+    const dataInicio = document.getElementById('filtro-dataInicio-abastecimento').value;
+    const dataFim = document.getElementById('filtro-dataFim-abastecimento').value;
+    const placaSelecionada = idVeiculo ? document.getElementById('filtro-idVeiculo-abastecimento').selectedOptions[0].text : 'Todas';
+
+    // Abre a janela JÁ, de forma síncrona (direto na resposta ao
+    // clique) — se deixar para abrir só depois do executar()
+    // (assíncrono), o navegador entende como pop-up e bloqueia.
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write('<html><head><title>Relatório de Abastecimentos</title></head><body style="font-family:Arial,sans-serif;padding:24px;color:#222;">Gerando relatório...</body></html>');
+      win.document.close();
+    } else {
+      mostrarToast('Seu navegador bloqueou a janela do relatório. Permita pop-ups para este site e tente de novo.', 'erro');
+      return;
+    }
+
+    Promise.all([
+      executar('obterDashboardAbastecimentos', idVeiculo, dataInicio, dataFim),
+      executar('listarAbastecimentos', 'TODOS', idVeiculo, dataInicio, dataFim)
+    ]).then(function (resultados) {
+      const d = resultados[0];
+      const lista = resultados[1];
+
+      const linhas = lista.map(function (a) {
+        return '<tr><td>' + new Date(a.data).toLocaleDateString('pt-BR') + '</td><td>' + a.placa + '</td>' +
+          '<td>' + a.nomeMotorista + '</td><td>' + a.tipoCombustivel + '</td>' +
+          '<td>' + (a.sistemaAbastecido === 'REFRIGERACAO' ? 'Refrigeração' : 'Veículo') + '</td>' +
+          '<td>' + (a.sistemaAbastecido === 'REFRIGERACAO' ? (a.horimetro !== '' && a.horimetro != null ? Number(a.horimetro).toLocaleString('pt-BR') + ' h' : '-') : (a.kmOdometro !== '' && a.kmOdometro != null ? Number(a.kmOdometro).toLocaleString('pt-BR') + ' km' : '-')) + '</td>' +
+          '<td>' + (a.rodadoDesdeAnterior == null ? '-' : Number(a.rodadoDesdeAnterior).toLocaleString('pt-BR') + (a.sistemaAbastecido === 'REFRIGERACAO' ? ' h' : ' km')) + '</td>' +
+          '<td>' + Number(a.litros).toLocaleString('pt-BR') + ' L</td>' +
+          '<td>' + formatarMoedaFrontend(a.valorTotal) + '</td>' +
+          '<td>' + a.statusValidacao + '</td></tr>';
+      }).join('');
+
+      win.document.open();
+      win.document.write(
+        '<html><head><title>Relatório de Abastecimentos</title>' +
+        '<style>body{font-family:Arial,sans-serif;padding:24px;color:#222;} h1{font-size:18px;}' +
+        'table{width:100%;border-collapse:collapse;margin-top:12px;} td,th{padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;text-align:left;}' +
+        '.resumo{display:flex;gap:24px;margin-top:10px;} .resumo div{background:#f4f6f7;padding:10px 14px;border-radius:8px;}</style></head><body>' +
+        '<h1>Relatório de Abastecimentos</h1>' +
+        '<p>Placa: ' + placaSelecionada + ' · Período: ' + (dataInicio || '-') + ' a ' + (dataFim || '-') + '</p>' +
+        '<div class="resumo">' +
+          '<div><strong>Total gasto:</strong> ' + formatarMoedaFrontend(d.totalValor) + '</div>' +
+          '<div><strong>Litros:</strong> ' + Number(d.totalLitros || 0).toLocaleString('pt-BR') + ' L</div>' +
+          '<div><strong>Preço médio/L:</strong> ' + (d.mediaPrecoLitro ? formatarMoedaFrontend(d.mediaPrecoLitro) : '-') + '</div>' +
+          '<div><strong>Km rodados:</strong> ' + Number(d.kmRodadoPeriodo || 0).toLocaleString('pt-BR') + ' km</div>' +
+        '</div>' +
+        '<table><tr><th>Data</th><th>Placa</th><th>Motorista</th><th>Combustível</th><th>Sistema</th><th>Km / Horímetro</th><th>Rodou desde o anterior</th><th>Litros</th><th>Valor</th><th>Status</th></tr>' +
+        linhas + '</table>' +
+        '<button onclick="window.print()" style="margin-top:16px;padding:10px 18px;background:#1a4480;color:#fff;border:none;border-radius:8px;cursor:pointer;">Imprimir / Salvar PDF</button>' +
+        '</body></html>'
+      );
+      win.document.close();
+    }).catch(function () {
+      win.document.open();
+      win.document.write('<p style="font-family:Arial,sans-serif;padding:24px;">Não foi possível gerar o relatório. Feche esta aba e tente de novo.</p>');
+      win.document.close();
+    });
+  }
+</script>
+          </section>
+          <section id="secao-despesas" class="secao oculto">
+<div class="barra-acoes-secao">
+  <select id="filtro-status-despesa" class="campo-busca">
+    <option value="PENDENTE">Pendentes</option>
+    <option value="APROVADO">Aprovadas</option>
+    <option value="REJEITADO">Rejeitadas</option>
+    <option value="TODOS">Todas</option>
+  </select>
+  <button class="btn btn-primario" id="btn-nova-despesa">
+    <i data-lucide="plus" style="width:16px;height:16px;vertical-align:-3px;margin-right:4px;"></i>
+    Nova despesa
+  </button>
+</div>
+
+<div class="painel tabela-wrapper">
+  <table class="tabela-simples" id="tabela-despesas">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Placa</th>
+        <th>Categoria</th>
+        <th>Descrição</th>
+        <th>Valor</th>
+        <th>Responsável</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="8" style="color:var(--cor-texto-suave);">Carregando...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  let despesasCache = [];
+
+  registrarCarregadorSecao('despesas', carregarDespesasGestor);
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const filtro = document.getElementById('filtro-status-despesa');
+    if (filtro) filtro.addEventListener('change', carregarDespesasGestor);
+    const btnNova = document.getElementById('btn-nova-despesa');
+    if (btnNova) btnNova.addEventListener('click', function () { abrirFormularioDespesa(); });
+  });
+
+  function carregarDespesasGestor() {
+    const status = document.getElementById('filtro-status-despesa').value;
+    executar('listarDespesas', status).then(function (lista) {
+      despesasCache = lista;
+      renderizarTabelaDespesas(lista);
+    });
+  }
+
+  function renderizarTabelaDespesas(lista) {
+    const tbody = document.querySelector('#tabela-despesas tbody');
+    if (!lista || lista.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="color:var(--cor-texto-suave);">Nenhuma despesa encontrada.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = lista.map(function (d) {
+      const dataFmt = d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '-';
+      const acoes = (d.statusValidacao === 'PENDENTE')
+        ? '<button class="btn-icone-tabela" title="Aprovar" onclick="aprovarDespesaAcao(\'' + d.idDespesa + '\')"><i data-lucide="check"></i></button>' +
+          '<button class="btn-icone-tabela" title="Rejeitar" onclick="rejeitarDespesaAcao(\'' + d.idDespesa + '\')"><i data-lucide="x"></i></button>'
+        : '';
+
+      return '<tr>' +
+        '<td>' + dataFmt + '</td>' +
+        '<td><strong>' + d.placa + '</strong></td>' +
+        '<td>' + d.categoria + '</td>' +
+        '<td>' + (d.descricao || '-') + '</td>' +
+        '<td>' + formatarMoedaFrontend(d.valor) + '</td>' +
+        '<td>' + d.responsavelPagamento.replace('_', ' ') + '</td>' +
+        '<td><span class="badge ' + classeBadgeValidacao(d.statusValidacao) + '">' + d.statusValidacao + '</span></td>' +
+        '<td>' + acoes + '</td>' +
+      '</tr>';
+    }).join('');
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function aprovarDespesaAcao(id) {
+    const despesa = despesasCache.find(function (d) { return d.idDespesa === id; });
+
+    // Só faz sentido perguntar a origem do pagamento se a despesa
+    // estiver vinculada a uma viagem (é aí que existe repasse
+    // operacional para comparar).
+    if (!despesa || !despesa.idViagem) {
+      executar('aprovarDespesa', id).then(function () {
+        mostrarToast('Despesa aprovada.', 'sucesso');
+        carregarDespesasGestor();
+      });
+      return;
+    }
+
+    const html =
+      '<p style="font-size:13px;color:var(--cor-texto-suave);">Esta despesa está vinculada a uma viagem. Confirme a origem do dinheiro usado para pagar:</p>' +
+      '<div class="campo campo-full">' +
+        '<label><input type="radio" name="origem-pagamento-despesa" value="true" checked> Pago com o repasse operacional que o motorista já recebeu para essa viagem</label><br>' +
+        '<label><input type="radio" name="origem-pagamento-despesa" value="false"> Recurso separado (não veio do repasse — ex: pago direto pela empresa)</label>' +
+      '</div>' +
+      '<div class="form-acoes">' +
+        '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+        '<button type="button" class="btn btn-primario" id="btn-confirmar-aprovacao-despesa">Aprovar</button>' +
+      '</div>';
+
+    const corpo = abrirModal('Aprovar despesa', html);
+    corpo.querySelector('#btn-confirmar-aprovacao-despesa').addEventListener('click', function () {
+      const pagoComRepasse = corpo.querySelector('input[name="origem-pagamento-despesa"]:checked').value;
+      executar('aprovarDespesa', id, pagoComRepasse).then(function () {
+        mostrarToast('Despesa aprovada.', 'sucesso');
+        fecharModal();
+        carregarDespesasGestor();
+      });
+    });
+  }
+
+  function rejeitarDespesaAcao(id) {
+    const html =
+      '<div class="campo campo-full"><label>Motivo da rejeição *</label><textarea id="motivo-rejeicao-despesa" rows="3"></textarea></div>' +
+      '<div class="form-acoes">' +
+        '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+        '<button type="button" class="btn btn-perigo" id="btn-confirmar-rejeicao-despesa">Rejeitar</button>' +
+      '</div>';
+
+    const corpo = abrirModal('Rejeitar despesa', html);
+    corpo.querySelector('#btn-confirmar-rejeicao-despesa').addEventListener('click', function () {
+      const motivo = document.getElementById('motivo-rejeicao-despesa').value;
+      if (!motivo) { mostrarToast('Informe o motivo da rejeição.', 'erro'); return; }
+      executar('rejeitarDespesa', id, motivo).then(function () {
+        mostrarToast('Despesa rejeitada.', 'sucesso');
+        fecharModal();
+        carregarDespesasGestor();
+      });
+    });
+  }
+
+  /**
+   * Formulário de lançamento de despesa (reaproveitado pelo painel
+   * do motorista via mesma função global).
+   */
+  function abrirFormularioDespesa(idViagemPreSelecionada) {
+    executar('listarVeiculosParaSelectSimples').then(function (veiculos) {
+      const optionsVeiculos = veiculos.map(function (v) { return '<option value="' + v.idVeiculo + '">' + v.placa + '</option>'; }).join('');
+      const optionsCategoria = ['PEDAGIO', 'LAVAGEM', 'PATIO', 'RASTREAMENTO', 'SEGURO', 'DOCUMENTACAO', 'MULTA', 'DIARIA', 'ADICIONAL_MOTORISTA', 'ADMINISTRATIVA', 'OUTRA']
+        .map(function (c) { return '<option value="' + c + '">' + c.replace('_', ' ') + '</option>'; }).join('');
+      const optionsResponsavel = ['GESTORA', 'PROPRIETARIO', 'COMPARTILHADO', 'DEDUZIR_RESULTADO']
+        .map(function (r) { return '<option value="' + r + '" ' + (r === 'DEDUZIR_RESULTADO' ? 'selected' : '') + '>' + r + '</option>'; }).join('');
+
+      const html =
+        '<form id="form-despesa" class="form-grid">' +
+          campoSelect('Veículo *', 'ds-idVeiculo', '<option value="">Selecione...</option>' + optionsVeiculos) +
+          campoData('Data', 'ds-data', new Date()) +
+
+          campoSelect('Categoria *', 'ds-categoria', optionsCategoria) +
+          campoNumero('Valor (R$) *', 'ds-valor', '') +
+
+          campoSelect('Responsável pelo pagamento', 'ds-responsavelPagamento', optionsResponsavel) +
+          campoTexto('Fornecedor', 'ds-fornecedor', '') +
+
+          campoNumero('% Gestora (se compartilhado)', 'ds-percentualGestora', 0) +
+          campoNumero('% Proprietário (se compartilhado)', 'ds-percentualProprietario', 0) +
+
+          campoTexto('Nº do documento/nota', 'ds-numeroDocumento', '') +
+          campoTexto('URL do comprovante', 'ds-comprovanteUrl', '') +
+
+          '<div class="campo-full" id="ds-vincular-viagem-container"></div>' +
+          '<div class="campo-full" id="ds-origem-pagamento-container" style="display:none;">' +
+            '<label style="font-size:12px;color:var(--cor-texto-suave);font-weight:600;">Pago com o repasse operacional do motorista?</label>' +
+            '<div><label><input type="radio" name="ds-origem-pagamento" value="true" checked> Sim, veio do repasse</label> &nbsp; ' +
+            '<label><input type="radio" name="ds-origem-pagamento" value="false"> Não, recurso separado</label></div>' +
+          '</div>' +
+
+          campoTextarea('Descrição', 'ds-descricao', '') +
+
+          '<div class="form-acoes">' +
+            '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+            '<button type="submit" class="btn btn-primario">Registrar despesa</button>' +
+          '</div>' +
+        '</form>';
+
+      const corpo = abrirModal('Nova despesa', html);
+
+      document.getElementById('ds-idVeiculo').addEventListener('change', function () {
+        const idVeiculo = this.value;
+        const container = document.getElementById('ds-vincular-viagem-container');
+        document.getElementById('ds-origem-pagamento-container').style.display = 'none';
+        if (!idVeiculo) { container.innerHTML = ''; return; }
+        executar('listarViagensParaVincular', idVeiculo).then(function (viagens) {
+          if (!viagens || viagens.length === 0) { container.innerHTML = ''; return; }
+          const opts = viagens.map(function (v) {
+            return '<option value="' + v.idViagem + '">' + v.numeroViagem + ' — ' + v.origem + ' → ' + v.destino + ' (' + v.statusViagem + ')</option>';
+          }).join('');
+          container.innerHTML = campoSelect('Vincular à viagem (opcional)', 'ds-idViagem', '<option value="">Nenhuma</option>' + opts);
+          document.getElementById('ds-idViagem').addEventListener('change', function () {
+            document.getElementById('ds-origem-pagamento-container').style.display = this.value ? '' : 'none';
+          });
+        });
+      });
+
+      corpo.querySelector('#form-despesa').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        const campoIdViagem = document.getElementById('ds-idViagem');
+        const idViagemSelecionada = campoIdViagem ? campoIdViagem.value : (idViagemPreSelecionada || '');
+        const radioOrigem = corpo.querySelector('input[name="ds-origem-pagamento"]:checked');
+        const dados = {
+          idVeiculo: document.getElementById('ds-idVeiculo').value,
+          data: document.getElementById('ds-data').value,
+          categoria: document.getElementById('ds-categoria').value,
+          valor: document.getElementById('ds-valor').value,
+          responsavelPagamento: document.getElementById('ds-responsavelPagamento').value,
+          fornecedor: document.getElementById('ds-fornecedor').value,
+          percentualGestora: document.getElementById('ds-percentualGestora').value,
+          percentualProprietario: document.getElementById('ds-percentualProprietario').value,
+          numeroDocumento: document.getElementById('ds-numeroDocumento').value,
+          comprovanteUrl: document.getElementById('ds-comprovanteUrl').value,
+          descricao: document.getElementById('ds-descricao').value,
+          idViagem: idViagemSelecionada,
+          pagoComRepasse: idViagemSelecionada && radioOrigem ? radioOrigem.value : false
+        };
+
+        if (dados.responsavelPagamento === 'COMPARTILHADO') {
+          const soma = Number(dados.percentualGestora || 0) + Number(dados.percentualProprietario || 0);
+          if (Math.abs(soma - 100) > 0.01) {
+            mostrarToast('A soma dos percentuais de rateio deve ser 100%. Soma atual: ' + soma + '%.', 'erro');
+            return;
+          }
+        }
+
+        executar('registrarDespesa', dados).then(function (resultado) {
+          mostrarToast(resultado.statusValidacao === 'APROVADO' ? 'Despesa registrada e aprovada automaticamente.' : 'Despesa registrada. Aguardando aprovação.', 'sucesso');
+          fecharModal();
+          if (document.getElementById('tabela-despesas')) carregarDespesasGestor();
+          if (document.getElementById('lista-minhas-despesas') && typeof carregarMinhasDespesas === 'function') carregarMinhasDespesas();
+        });
+      });
+    });
+  }
+</script>
+          </section>
+          <section id="secao-manutencoes" class="secao oculto">
+<div class="barra-acoes-secao">
+  <select id="filtro-status-manutencao" class="campo-busca">
+    <option value="TODOS">Todos os status</option>
+    <option value="SOLICITADA">Solicitadas</option>
+    <option value="AGENDADA">Agendadas</option>
+    <option value="EM_EXECUCAO">Em execução</option>
+    <option value="CONCLUIDA">Concluídas</option>
+    <option value="CANCELADA">Canceladas</option>
+  </select>
+  <button class="btn btn-primario" id="btn-nova-manutencao">
+    <i data-lucide="plus" style="width:16px;height:16px;vertical-align:-3px;margin-right:4px;"></i>
+    Nova manutenção
+  </button>
+</div>
+
+<div class="painel tabela-wrapper">
+  <table class="tabela-simples" id="tabela-manutencoes">
+    <thead>
+      <tr>
+        <th>Abertura</th>
+        <th>Placa</th>
+        <th>Tipo</th>
+        <th>Descrição</th>
+        <th>Oficina</th>
+        <th>Valor</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="8" style="color:var(--cor-texto-suave);">Carregando...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  registrarCarregadorSecao('manutencoes', carregarManutencoesGestor);
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const filtro = document.getElementById('filtro-status-manutencao');
+    if (filtro) filtro.addEventListener('change', carregarManutencoesGestor);
+    const btnNova = document.getElementById('btn-nova-manutencao');
+    if (btnNova) btnNova.addEventListener('click', abrirFormularioNovaManutencao);
+  });
+
+  function carregarManutencoesGestor() {
+    const status = document.getElementById('filtro-status-manutencao').value;
+    executar('listarManutencoes', status).then(renderizarTabelaManutencoes);
+  }
+
+  function classeBadgeManutencao(status) {
+    if (status === 'CONCLUIDA') return 'badge-sucesso';
+    if (status === 'CANCELADA') return 'badge-critico';
+    if (status === 'EM_EXECUCAO') return 'badge-critico';
+    return 'badge-alerta';
+  }
+
+  function renderizarTabelaManutencoes(lista) {
+    const tbody = document.querySelector('#tabela-manutencoes tbody');
+    if (!lista || lista.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="color:var(--cor-texto-suave);">Nenhuma manutenção encontrada.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = lista.map(function (m) {
+      const dataFmt = m.dataAbertura ? new Date(m.dataAbertura).toLocaleDateString('pt-BR') : '-';
+      let acoes = '';
+      if (m.status === 'SOLICITADA') {
+        acoes += '<button class="btn-icone-tabela" title="Agendar" onclick="abrirFormularioAgendar(\'' + m.idManutencao + '\')"><i data-lucide="calendar"></i></button>';
+        acoes += '<button class="btn-icone-tabela" title="Iniciar execução" onclick="iniciarExecucaoAcao(\'' + m.idManutencao + '\')"><i data-lucide="play"></i></button>';
+      }
+      if (m.status === 'AGENDADA') {
+        acoes += '<button class="btn-icone-tabela" title="Iniciar execução" onclick="iniciarExecucaoAcao(\'' + m.idManutencao + '\')"><i data-lucide="play"></i></button>';
+      }
+      if (m.status === 'SOLICITADA' || m.status === 'AGENDADA' || m.status === 'EM_EXECUCAO') {
+        acoes += '<button class="btn-icone-tabela" title="Concluir" onclick="abrirFormularioConcluir(\'' + m.idManutencao + '\')"><i data-lucide="check-circle"></i></button>';
+        acoes += '<button class="btn-icone-tabela" title="Cancelar" onclick="cancelarManutencaoAcao(\'' + m.idManutencao + '\')"><i data-lucide="x"></i></button>';
+      }
+
+      return '<tr>' +
+        '<td>' + dataFmt + '</td>' +
+        '<td><strong>' + m.placa + '</strong></td>' +
+        '<td>' + m.tipo + '</td>' +
+        '<td>' + m.descricao + '</td>' +
+        '<td>' + (m.fornecedorOficina || '-') + '</td>' +
+        '<td>' + (m.valorTotal ? formatarMoedaFrontend(m.valorTotal) : '-') + '</td>' +
+        '<td><span class="badge ' + classeBadgeManutencao(m.status) + '">' + m.status.replace('_', ' ') + '</span></td>' +
+        '<td>' + acoes + '</td>' +
+      '</tr>';
+    }).join('');
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function abrirFormularioNovaManutencao() {
+    executar('listarVeiculosParaSelectSimples').then(function (veiculos) {
+      const optionsVeiculos = veiculos.map(function (v) { return '<option value="' + v.idVeiculo + '">' + v.placa + '</option>'; }).join('');
+      const optionsTipo = ['PREVENTIVA', 'CORRETIVA', 'PNEUS', 'DOCUMENTAL', 'OUTRA'].map(function (t) { return '<option value="' + t + '">' + t + '</option>'; }).join('');
+
+      const html =
+        '<form id="form-nova-manutencao" class="form-grid">' +
+          campoSelect('Veículo *', 'nm-idVeiculo', '<option value="">Selecione...</option>' + optionsVeiculos) +
+          campoSelect('Tipo *', 'nm-tipo', optionsTipo) +
+          campoTextarea('Descrição do problema/serviço *', 'nm-descricao', '') +
+          campoNumero('Km do odômetro', 'nm-kmOdometro', '') +
+          '<div class="form-acoes">' +
+            '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+            '<button type="submit" class="btn btn-primario">Solicitar manutenção</button>' +
+          '</div>' +
+        '</form>';
+
+      const corpo = abrirModal('Nova solicitação de manutenção', html);
+      corpo.querySelector('#form-nova-manutencao').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        const dados = {
+          idVeiculo: document.getElementById('nm-idVeiculo').value,
+          tipo: document.getElementById('nm-tipo').value,
+          descricao: document.getElementById('nm-descricao').value,
+          kmOdometro: document.getElementById('nm-kmOdometro').value
+        };
+        executar('solicitarManutencao', dados).then(function () {
+          mostrarToast('Manutenção solicitada.', 'sucesso');
+          fecharModal();
+          carregarManutencoesGestor();
+        });
+      });
+    });
+  }
+
+  function abrirFormularioAgendar(idManutencao) {
+    const html =
+      '<form id="form-agendar-manutencao" class="form-grid">' +
+        campoTexto('Fornecedor/Oficina', 'ag-fornecedorOficina', '') +
+        campoData('Data prevista de execução', 'ag-dataExecucao', null) +
+        '<div class="form-acoes">' +
+          '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primario">Confirmar agendamento</button>' +
+        '</div>' +
+      '</form>';
+
+    const corpo = abrirModal('Agendar manutenção', html);
+    corpo.querySelector('#form-agendar-manutencao').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      const dados = {
+        fornecedorOficina: document.getElementById('ag-fornecedorOficina').value,
+        dataExecucao: document.getElementById('ag-dataExecucao').value
+      };
+      executar('agendarManutencao', idManutencao, dados).then(function () {
+        mostrarToast('Manutenção agendada.', 'sucesso');
+        fecharModal();
+        carregarManutencoesGestor();
+      });
+    });
+  }
+
+  function iniciarExecucaoAcao(idManutencao) {
+    executar('iniciarExecucaoManutencao', idManutencao).then(function () {
+      mostrarToast('Execução iniciada. Veículo marcado como em manutenção.', 'sucesso');
+      carregarManutencoesGestor();
+    });
+  }
+
+  function abrirFormularioConcluir(idManutencao) {
+    const optionsResponsavel = ['GESTORA', 'PROPRIETARIO', 'COMPARTILHADO', 'DEDUZIR_RESULTADO'].map(function (r) {
+      return '<option value="' + r + '" ' + (r === 'DEDUZIR_RESULTADO' ? 'selected' : '') + '>' + r + '</option>';
+    }).join('');
+
+    const html =
+      '<form id="form-concluir-manutencao" class="form-grid">' +
+        campoTexto('Fornecedor/Oficina *', 'cm-fornecedorOficina', '') +
+        campoData('Data de execução', 'cm-dataExecucao', new Date()) +
+        campoNumero('Valor de peças (R$)', 'cm-valorPecas', 0) +
+        campoNumero('Valor de mão de obra (R$)', 'cm-valorMaoObra', 0) +
+        campoSelect('Responsável pelo pagamento', 'cm-responsavelPagamento', optionsResponsavel) +
+        campoNumero('% Gestora (se compartilhado)', 'cm-percentualGestora', 0) +
+        campoNumero('% Proprietário (se compartilhado)', 'cm-percentualProprietario', 0) +
+        campoNumero('Próxima manutenção (km)', 'cm-proximaManutencaoKm', '') +
+        campoData('Próxima manutenção (data)', 'cm-proximaManutencaoData', null) +
+        campoTexto('URL do comprovante', 'cm-comprovanteUrl', '') +
+        '<div class="campo-full">' +
+          '<label style="font-size:12px;color:var(--cor-texto-suave);font-weight:600;">Foi paga com o repasse operacional de alguma viagem em andamento?</label>' +
+          '<div><label><input type="radio" name="cm-origem-pagamento" value="false" checked> Não, recurso separado (o mais comum)</label> &nbsp; ' +
+          '<label><input type="radio" name="cm-origem-pagamento" value="true"> Sim, o motorista pagou com o repasse que recebeu</label></div>' +
+        '</div>' +
+        '<div class="form-acoes">' +
+          '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primario">Concluir manutenção</button>' +
+        '</div>' +
+      '</form>';
+
+    const corpo = abrirModal('Concluir manutenção', html);
+    corpo.querySelector('#form-concluir-manutencao').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      const radioOrigem = corpo.querySelector('input[name="cm-origem-pagamento"]:checked');
+      const dados = {
+        fornecedorOficina: document.getElementById('cm-fornecedorOficina').value,
+        dataExecucao: document.getElementById('cm-dataExecucao').value,
+        valorPecas: document.getElementById('cm-valorPecas').value,
+        valorMaoObra: document.getElementById('cm-valorMaoObra').value,
+        responsavelPagamento: document.getElementById('cm-responsavelPagamento').value,
+        percentualGestora: document.getElementById('cm-percentualGestora').value,
+        percentualProprietario: document.getElementById('cm-percentualProprietario').value,
+        proximaManutencaoKm: document.getElementById('cm-proximaManutencaoKm').value,
+        proximaManutencaoData: document.getElementById('cm-proximaManutencaoData').value,
+        comprovanteUrl: document.getElementById('cm-comprovanteUrl').value,
+        pagoComRepasse: radioOrigem ? radioOrigem.value : false
+      };
+
+      const responsavel = dados.responsavelPagamento;
+      if (responsavel === 'COMPARTILHADO') {
+        const soma = Number(dados.percentualGestora || 0) + Number(dados.percentualProprietario || 0);
+        if (Math.abs(soma - 100) > 0.01) {
+          mostrarToast('A soma dos percentuais de rateio deve ser 100%. Soma atual: ' + soma + '%.', 'erro');
+          return;
+        }
+      }
+
+      executar('concluirManutencao', idManutencao, dados).then(function () {
+        mostrarToast('Manutenção concluída.', 'sucesso');
+        fecharModal();
+        carregarManutencoesGestor();
+      });
+    });
+  }
+
+  function cancelarManutencaoAcao(idManutencao) {
+    const html =
+      '<div class="campo campo-full"><label>Motivo do cancelamento *</label><textarea id="motivo-cancelamento-manutencao" rows="3"></textarea></div>' +
+      '<div class="form-acoes">' +
+        '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Voltar</button>' +
+        '<button type="button" class="btn btn-perigo" id="btn-confirmar-cancelamento-manutencao">Cancelar manutenção</button>' +
+      '</div>';
+
+    const corpo = abrirModal('Cancelar manutenção', html);
+    corpo.querySelector('#btn-confirmar-cancelamento-manutencao').addEventListener('click', function () {
+      const motivo = document.getElementById('motivo-cancelamento-manutencao').value;
+      if (!motivo) { mostrarToast('Informe o motivo do cancelamento.', 'erro'); return; }
+      executar('cancelarManutencao', idManutencao, motivo).then(function () {
+        mostrarToast('Manutenção cancelada.', 'sucesso');
+        fecharModal();
+        carregarManutencoesGestor();
+      });
+    });
+  }
+</script>
+          </section>
+          <section id="secao-fechamentos" class="secao oculto">
+<div class="painel">
+  <h3>Gerar prévia de fechamento</h3>
+  <form id="form-previa-fechamento" class="form-grid">
+    <div id="select-veiculo-fechamento-container"></div>
+    <div class="campo">
+      <label>Data início *</label>
+      <input type="text" id="fc-dataInicio" placeholder="dd/mm/aaaa">
+    </div>
+    <div class="campo">
+      <label>Data fim *</label>
+      <input type="text" id="fc-dataFim" placeholder="dd/mm/aaaa">
+    </div>
+    <div class="form-acoes" style="grid-column:1/-1;justify-content:flex-start;">
+      <button type="submit" class="btn btn-primario">Gerar prévia</button>
+    </div>
+  </form>
+</div>
+
+<div id="area-previa-fechamento"></div>
+
+<div class="barra-acoes-secao" style="margin-top:24px;">
+  <select id="filtro-status-fechamento" class="campo-busca">
+    <option value="TODOS">Todos os status</option>
+    <option value="RASCUNHO">Rascunho</option>
+    <option value="EM_CONFERENCIA">Em conferência</option>
+    <option value="APROVADO">Aprovados</option>
+    <option value="PAGO">Pagos</option>
+    <option value="CANCELADO">Cancelados</option>
+  </select>
+</div>
+
+<div class="painel tabela-wrapper">
+  <table class="tabela-simples" id="tabela-fechamentos">
+    <thead>
+      <tr>
+        <th>Competência</th>
+        <th>Placa</th>
+        <th>Período</th>
+        <th>Receita</th>
+        <th>Resultado distribuível</th>
+        <th>Valor proprietário</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="8" style="color:var(--cor-texto-suave);">Carregando...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  let previaFechamentoAtual = null;
+
+  registrarCarregadorSecao('fechamentos', function () {
+    carregarSelectVeiculosFechamento();
+    carregarFechamentosGestor();
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('form-previa-fechamento').addEventListener('submit', gerarPreviaFechamentoAcao);
+    const filtro = document.getElementById('filtro-status-fechamento');
+    if (filtro) filtro.addEventListener('change', carregarFechamentosGestor);
+  });
+
+  function carregarSelectVeiculosFechamento() {
+    executar('listarVeiculosParaSelectSimples').then(function (veiculos) {
+      const options = veiculos.map(function (v) { return '<option value="' + v.idVeiculo + '">' + v.placa + '</option>'; }).join('');
+      document.getElementById('select-veiculo-fechamento-container').innerHTML =
+        campoSelect('Veículo *', 'fc-idVeiculo', '<option value="">Selecione...</option>' + options);
+    });
+  }
+
+  function carregarFechamentosGestor() {
+    const status = document.getElementById('filtro-status-fechamento').value;
+    executar('listarFechamentos', status).then(renderizarTabelaFechamentos);
+  }
+
+  function classeBadgeFechamento(status) {
+    if (status === 'PAGO') return 'badge-sucesso';
+    if (status === 'APROVADO') return 'badge-sucesso';
+    if (status === 'CANCELADO') return 'badge-critico';
+    return 'badge-alerta';
+  }
+
+  function renderizarTabelaFechamentos(lista) {
+    const tbody = document.querySelector('#tabela-fechamentos tbody');
+    if (!lista || lista.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="color:var(--cor-texto-suave);">Nenhum fechamento encontrado.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = lista.map(function (f) {
+      const periodo = new Date(f.dataInicio).toLocaleDateString('pt-BR') + ' – ' + new Date(f.dataFim).toLocaleDateString('pt-BR');
+      let acoes = '<button class="btn-icone-tabela" title="Ver relatório" onclick="abrirRelatorioFechamento(\'' + f.idFechamento + '\')"><i data-lucide="file-text"></i></button>';
+      if (f.status === 'RASCUNHO' || f.status === 'EM_CONFERENCIA') {
+        acoes += '<button class="btn-icone-tabela" title="Aprovar" onclick="aprovarFechamentoAcao(\'' + f.idFechamento + '\')"><i data-lucide="check"></i></button>';
+      }
+      if (f.status === 'APROVADO') {
+        acoes += '<button class="btn-icone-tabela" title="Registrar pagamento" onclick="abrirFormularioPagamentoFechamento(\'' + f.idFechamento + '\')"><i data-lucide="banknote"></i></button>';
+      }
+      if (f.status !== 'PAGO' && f.status !== 'CANCELADO') {
+        acoes += '<button class="btn-icone-tabela" title="Cancelar" onclick="cancelarFechamentoAcao(\'' + f.idFechamento + '\')"><i data-lucide="x"></i></button>';
+      }
+
+      return '<tr>' +
+        '<td>' + f.competencia + '</td>' +
+        '<td><strong>' + f.placa + '</strong></td>' +
+        '<td>' + periodo + '</td>' +
+        '<td>' + formatarMoedaFrontend(f.receitaTotal) + '</td>' +
+        '<td>' + formatarMoedaFrontend(f.resultadoLiquidoDistribuivel) + '</td>' +
+        '<td>' + formatarMoedaFrontend(f.valorProprietario) + '</td>' +
+        '<td><span class="badge ' + classeBadgeFechamento(f.status) + '">' + f.status.replace('_', ' ') + '</span></td>' +
+        '<td>' + acoes + '</td>' +
+      '</tr>';
+    }).join('');
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  /* ================= GERAÇÃO DA PRÉVIA ================= */
+  function gerarPreviaFechamentoAcao(ev) {
+    ev.preventDefault();
+    const idVeiculo = document.getElementById('fc-idVeiculo').value;
+    const dataInicio = document.getElementById('fc-dataInicio').value;
+    const dataFim = document.getElementById('fc-dataFim').value;
+
+    if (!idVeiculo || !dataInicio || !dataFim) {
+      mostrarToast('Selecione o veículo e informe o período completo.', 'erro');
+      return;
+    }
+
+    executar('gerarPreviaFechamento', idVeiculo, dataInicio, dataFim).then(function (previa) {
+      previaFechamentoAtual = previa;
+      renderizarPreviaFechamento(previa);
+    });
+  }
+
+  function linhaAjustavel(label, id, valor) {
+    return '<div class="campo"><label>' + label + '</label>' +
+      '<input type="number" step="0.01" id="' + id + '" value="' + valor + '"></div>';
+  }
+
+  function renderizarPreviaFechamento(p) {
+    const area = document.getElementById('area-previa-fechamento');
+
+    const linhasMemoria = p.memoriaCalculo.map(function (m) {
+      const sinal = sinalMemoria(m);
+      return '<tr' + estiloLinhaMemoria(m) + '><td>' + m.origem + '</td><td>' + m.descricao + '</td><td>' + rotuloCategoriaMemoria(m) + '</td>' +
+        '<td style="text-align:right;">' + sinal + ' ' + formatarMoedaFrontend(m.valor) + '</td></tr>';
+    }).join('');
+
+    area.innerHTML =
+      '<div class="painel">' +
+        '<h3>Prévia — ' + p.placa + ' (' + new Date(p.dataInicio).toLocaleDateString('pt-BR') + ' a ' + new Date(p.dataFim).toLocaleDateString('pt-BR') + ')</h3>' +
+
+        (p.saldoAReceberFretes > 0
+          ? '<div style="background:var(--cor-alerta-fundo);color:var(--cor-alerta);padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:10px;">⚠ Atenção: ' + formatarMoedaFrontend(p.saldoAReceberFretes) + ' dos fretes deste período ainda NÃO foram recebidos do cliente. O resultado abaixo é calculado sobre o frete faturado — parte do valor a repartir ainda não entrou no caixa.</div>'
+          : '') +
+        '<p style="font-size:12px;color:var(--cor-texto-suave);margin:0 0 10px;">' +
+          'Fretes faturados: ' + formatarMoedaFrontend(p.receitaBrutaFretes) +
+          ' · já recebido do cliente: ' + formatarMoedaFrontend(p.recebidoClienteFretes) +
+          ' · a receber: ' + formatarMoedaFrontend(p.saldoAReceberFretes) +
+          ' · repasse operacional entregue aos motoristas: ' + formatarMoedaFrontend(p.repasseOperacionalTotal) + ' (informativo — o que foi gasto já está nas despesas)' +
+        '</p>' +
+
+        '<div class="form-grid" id="ajustes-previa-fechamento">' +
+          linhaAjustavel('Receita bruta de fretes (R$)', 'pv-receitaBrutaFretes', p.receitaBrutaFretes) +
+          linhaAjustavel('Receita de contratos por período (R$)', 'pv-receitaContratos', p.receitaContratos) +
+          linhaAjustavel('Outras receitas (R$)', 'pv-outrasReceitas', p.outrasReceitas) +
+          linhaAjustavel('Combustível (R$)', 'pv-combustivel', p.combustivel) +
+          linhaAjustavel('Manutenção dedutível (R$)', 'pv-manutencao', p.manutencao) +
+          linhaAjustavel('Custo de motorista (R$)', 'pv-motorista', p.motorista) +
+          linhaAjustavel('Pedágio (R$)', 'pv-pedagio', p.pedagio) +
+          linhaAjustavel('Despesas operacionais (R$)', 'pv-despesasOperacionais', p.despesasOperacionais) +
+          linhaAjustavel('Despesas administrativas (R$)', 'pv-despesasAdministrativas', p.despesasAdministrativas) +
+          linhaAjustavel('Impostos/taxas (R$)', 'pv-impostosTaxas', p.impostosTaxas) +
+          linhaAjustavel('Comissão motorista em viagens (R$)', 'pv-comissaoMotoristaViagens', p.comissaoMotoristaViagens) +
+          linhaAjustavel('Salário do motorista rateado (R$)', 'pv-salarioMotoristaVeiculo', p.salarioMotoristaVeiculo) +
+          linhaAjustavel('Fundo de reserva (R$) — ' + p.percentualFundoReserva + '% sugerido', 'pv-fundoReservaValor', p.fundoReservaValor) +
+        '</div>' +
+
+        '<p style="font-size:12px;color:var(--cor-texto-suave);margin-top:8px;">' +
+          'Custos externos informativos (não entram no resultado distribuível): gestora ' + formatarMoedaFrontend(p.custosExternosGestora) +
+          ' · proprietário ' + formatarMoedaFrontend(p.custosExternosProprietario) +
+          ' · saldo atual do fundo de reserva: ' + formatarMoedaFrontend(p.saldoFundoReservaAtual) +
+        '</p>' +
+
+        '<div id="resumo-previa-fechamento" class="painel" style="background:var(--cor-fundo);margin-top:14px;"></div>' +
+
+        '<h4>Memória de cálculo (' + p.memoriaCalculo.length + ' lançamentos)</h4>' +
+        '<div class="tabela-wrapper"><table class="tabela-simples"><thead><tr><th>Origem</th><th>Descrição</th><th>Categoria</th><th style="text-align:right;">Valor</th></tr></thead>' +
+        '<tbody>' + (linhasMemoria || '<tr><td colspan="4" style="color:var(--cor-texto-suave);">Nenhum lançamento encontrado no período.</td></tr>') + '</tbody></table></div>' +
+
+        '<div class="campo campo-full" style="margin-top:14px;"><label>Observações do fechamento</label><textarea id="pv-observacoes" rows="2"></textarea></div>' +
+
+        '<div class="form-acoes">' +
+          '<button type="button" class="btn btn-secundario" id="btn-recalcular-previa">Recalcular resumo</button>' +
+          '<button type="button" class="btn btn-primario" id="btn-salvar-fechamento">Salvar fechamento</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="painel" style="margin-top:18px;">' +
+        '<h4 style="margin-top:0;">Prestação de contas de uma viagem específica</h4>' +
+        '<p style="font-size:12px;color:var(--cor-texto-suave);margin-top:-6px;">A prévia acima já cobre todas as viagens do período. Se precisar do detalhamento de só uma delas (frete, comissão, despesas do motorista, combustível, km, tempo gasto), escolha abaixo — a lista já vem filtrada pela placa e período selecionados.</p>' +
+        '<div class="form-grid">' +
+          '<div id="pv-select-viagem-especifica-container"><p style="font-size:12px;color:var(--cor-texto-suave);">Carregando viagens do período...</p></div>' +
+          '<div class="form-acoes" style="align-items:flex-end;">' +
+            '<button type="button" class="btn btn-secundario" id="btn-gerar-prestacao-viagem-especifica">Gerar prestação de contas desta viagem</button>' +
+          '</div>' +
+        '</div>' +
+        '<div id="pv-area-prestacao-viagem"></div>' +
+      '</div>';
+
+    document.getElementById('btn-recalcular-previa').addEventListener('click', atualizarResumoPreviaFechamento);
+    document.getElementById('btn-salvar-fechamento').addEventListener('click', salvarFechamentoAcao);
+    ['pv-receitaBrutaFretes', 'pv-receitaContratos', 'pv-outrasReceitas', 'pv-combustivel', 'pv-manutencao', 'pv-motorista', 'pv-pedagio',
+      'pv-despesasOperacionais', 'pv-despesasAdministrativas', 'pv-impostosTaxas', 'pv-comissaoMotoristaViagens', 'pv-salarioMotoristaVeiculo', 'pv-fundoReservaValor'].forEach(function (id) {
+      document.getElementById(id).addEventListener('change', atualizarResumoPreviaFechamento);
+    });
+
+    atualizarResumoPreviaFechamento();
+    carregarSelectViagensDaPrevia();
+
+    document.getElementById('btn-gerar-prestacao-viagem-especifica').addEventListener('click', function () {
+      const idViagem = document.getElementById('pv-idViagemEspecifica').value;
+      if (!idViagem) { mostrarToast('Escolha uma viagem da lista.', 'erro'); return; }
+      executar('obterPrestacaoContasViagem', idViagem).then(function (dados) {
+        renderizarPrestacaoContasViagem(dados, document.getElementById('pv-area-prestacao-viagem'));
+      });
+    });
+  }
+
+  function carregarSelectViagensDaPrevia() {
+    const idVeiculo = document.getElementById('fc-idVeiculo').value;
+    const dataInicio = document.getElementById('fc-dataInicio').value;
+    const dataFim = document.getElementById('fc-dataFim').value;
+
+    executar('listarViagensConcluidasNoPeriodo', idVeiculo, dataInicio, dataFim).then(function (viagens) {
+      const container = document.getElementById('pv-select-viagem-especifica-container');
+      if (!viagens || viagens.length === 0) {
+        container.innerHTML = '<p style="font-size:12px;color:var(--cor-texto-suave);">Nenhuma viagem concluída para esta placa neste período.</p>';
+        return;
+      }
+      const options = viagens.map(function (v) {
+        return '<option value="' + v.idViagem + '">' + v.numeroViagem + ' — ' + v.origem + ' → ' + v.destino +
+          ' (' + new Date(v.dataChegada).toLocaleDateString('pt-BR') + ') — ' + formatarMoedaFrontend(v.valorFrete) + '</option>';
+      }).join('');
+      container.innerHTML = campoSelect('Viagem (' + viagens.length + ' encontrada(s) no período)', 'pv-idViagemEspecifica', options);
+    });
+  }
+
+  function lerValoresAjustadosPreviaFechamento() {
+    return {
+      receitaBrutaFretes: Number(document.getElementById('pv-receitaBrutaFretes').value) || 0,
+      receitaContratos: Number(document.getElementById('pv-receitaContratos').value) || 0,
+      outrasReceitas: Number(document.getElementById('pv-outrasReceitas').value) || 0,
+      combustivel: Number(document.getElementById('pv-combustivel').value) || 0,
+      manutencao: Number(document.getElementById('pv-manutencao').value) || 0,
+      motorista: Number(document.getElementById('pv-motorista').value) || 0,
+      pedagio: Number(document.getElementById('pv-pedagio').value) || 0,
+      despesasOperacionais: Number(document.getElementById('pv-despesasOperacionais').value) || 0,
+      despesasAdministrativas: Number(document.getElementById('pv-despesasAdministrativas').value) || 0,
+      impostosTaxas: Number(document.getElementById('pv-impostosTaxas').value) || 0,
+      comissaoMotoristaViagens: Number(document.getElementById('pv-comissaoMotoristaViagens').value) || 0,
+      salarioMotoristaVeiculo: Number(document.getElementById('pv-salarioMotoristaVeiculo').value) || 0,
+      fundoReservaValor: Number(document.getElementById('pv-fundoReservaValor').value) || 0
+    };
+  }
+
+  function atualizarResumoPreviaFechamento() {
+    const v = lerValoresAjustadosPreviaFechamento();
+    const receitaTotal = v.receitaBrutaFretes + v.receitaContratos + v.outrasReceitas;
+    const totalDespesasSemReserva = v.combustivel + v.manutencao + v.motorista + v.pedagio +
+      v.despesasOperacionais + v.despesasAdministrativas + v.impostosTaxas + v.comissaoMotoristaViagens + v.salarioMotoristaVeiculo;
+    const totalDespesas = totalDespesasSemReserva + v.fundoReservaValor;
+    const resultadoDistribuivel = receitaTotal - totalDespesas;
+
+    const percProp = Number(previaFechamentoAtual.percentualProprietario);
+    const percGestora = Number(previaFechamentoAtual.percentualGestora);
+    const valorProprietario = Math.round(resultadoDistribuivel * (percProp / 100) * 100) / 100;
+    const valorGestora = Math.round((resultadoDistribuivel - valorProprietario) * 100) / 100;
+
+    document.getElementById('resumo-previa-fechamento').innerHTML =
+      '<table class="tabela-simples"><tbody>' +
+        '<tr><td>Receita total</td><td style="text-align:right;">' + formatarMoedaFrontend(receitaTotal) + '</td></tr>' +
+        '<tr><td>Total de despesas (com fundo de reserva)</td><td style="text-align:right;">' + formatarMoedaFrontend(totalDespesas) + '</td></tr>' +
+        '<tr><td><strong>Resultado líquido distribuível</strong></td><td style="text-align:right;"><strong>' + formatarMoedaFrontend(resultadoDistribuivel) + '</strong></td></tr>' +
+        '<tr><td>Proprietário (' + percProp + '%)</td><td style="text-align:right;">' + formatarMoedaFrontend(valorProprietario) + '</td></tr>' +
+        '<tr><td>Gestora (' + percGestora + '%)</td><td style="text-align:right;">' + formatarMoedaFrontend(valorGestora) + '</td></tr>' +
+      '</tbody></table>';
+  }
+
+  function salvarFechamentoAcao() {
+    const ajustes = lerValoresAjustadosPreviaFechamento();
+    const dados = Object.assign({}, previaFechamentoAtual, ajustes, {
+      observacoes: document.getElementById('pv-observacoes').value,
+      memoriaCalculo: previaFechamentoAtual.memoriaCalculo
+    });
+
+    executar('salvarFechamento', dados).then(function () {
+      mostrarToast('Fechamento salvo como EM_CONFERENCIA. Revise e aprove quando estiver correto.', 'sucesso');
+      document.getElementById('area-previa-fechamento').innerHTML = '';
+      previaFechamentoAtual = null;
+      carregarFechamentosGestor();
+    });
+  }
+
+  /* ================= AÇÕES SOBRE FECHAMENTOS SALVOS ================= */
+  function aprovarFechamentoAcao(idFechamento) {
+    const html =
+      '<p>Ao aprovar, o fundo de reserva será creditado automaticamente e o período ficará bloqueado contra reaproveitamento em outro fechamento.</p>' +
+      '<div class="form-acoes">' +
+        '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+        '<button type="button" class="btn btn-primario" id="btn-confirmar-aprovacao-fechamento">Confirmar aprovação</button>' +
+      '</div>';
+    const corpo = abrirModal('Aprovar fechamento', html);
+    corpo.querySelector('#btn-confirmar-aprovacao-fechamento').addEventListener('click', function () {
+      executar('aprovarFechamento', idFechamento).then(function () {
+        mostrarToast('Fechamento aprovado.', 'sucesso');
+        fecharModal();
+        carregarFechamentosGestor();
+      });
+    });
+  }
+
+  function abrirFormularioPagamentoFechamento(idFechamento) {
+    const html =
+      '<form id="form-pagamento-fechamento" class="form-grid">' +
+        campoTexto('URL do comprovante de repasse', 'pg-comprovanteRepasseUrl', '') +
+        '<div class="form-acoes">' +
+          '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primario">Confirmar pagamento</button>' +
+        '</div>' +
+      '</form>';
+    const corpo = abrirModal('Registrar pagamento ao proprietário', html);
+    corpo.querySelector('#form-pagamento-fechamento').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      const dados = { comprovanteRepasseUrl: document.getElementById('pg-comprovanteRepasseUrl').value };
+      executar('registrarPagamentoFechamento', idFechamento, dados).then(function () {
+        mostrarToast('Pagamento registrado.', 'sucesso');
+        fecharModal();
+        carregarFechamentosGestor();
+      });
+    });
+  }
+
+  function cancelarFechamentoAcao(idFechamento) {
+    const html =
+      '<div class="campo campo-full"><label>Motivo do cancelamento *</label><textarea id="motivo-cancelamento-fechamento" rows="3"></textarea></div>' +
+      '<p style="font-size:12px;color:var(--cor-texto-suave);">Se o fechamento já estava aprovado, o crédito do fundo de reserva será estornado automaticamente.</p>' +
+      '<div class="form-acoes">' +
+        '<button type="button" class="btn btn-secundario" onclick="fecharModal()">Voltar</button>' +
+        '<button type="button" class="btn btn-perigo" id="btn-confirmar-cancelamento-fechamento">Cancelar fechamento</button>' +
+      '</div>';
+    const corpo = abrirModal('Cancelar fechamento', html);
+    corpo.querySelector('#btn-confirmar-cancelamento-fechamento').addEventListener('click', function () {
+      const motivo = document.getElementById('motivo-cancelamento-fechamento').value;
+      if (!motivo) { mostrarToast('Informe o motivo do cancelamento.', 'erro'); return; }
+      executar('cancelarFechamento', idFechamento, motivo).then(function () {
+        mostrarToast('Fechamento cancelado.', 'sucesso');
+        fecharModal();
+        carregarFechamentosGestor();
+      });
+    });
+  }
+
+  /* ================= RELATÓRIO IMPRIMÍVEL ================= */
+  function abrirRelatorioFechamento(idFechamento) {
+    executar('obterDadosRelatorioPrestacaoContas', idFechamento).then(function (dados) {
+      const janela = window.open('', '_blank');
+      janela.document.write(montarHtmlRelatorioFechamento(dados));
+      janela.document.close();
+    });
+  }
+
+  function montarHtmlRelatorioFechamento(dados) {
+    const f = dados.fechamento;
+    const dataInicioFmt = new Date(f.dataInicio).toLocaleDateString('pt-BR');
+    const dataFimFmt = new Date(f.dataFim).toLocaleDateString('pt-BR');
+    const banco = f.dadosBancariosProprietario || {};
+
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Prestação de contas - ' + f.placa + '</title>' +
+      '<style>' +
+      'body{font-family:Arial,sans-serif;color:#1c2b2c;max-width:720px;margin:32px auto;padding:0 16px;}' +
+      'h1{font-size:18px;margin-bottom:2px;} h2{font-size:14px;color:#5b6b6c;margin-top:0;}' +
+      'table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px;}' +
+      'td,th{padding:6px 8px;border-bottom:1px solid #e1e6e7;text-align:left;}' +
+      '.total{font-weight:bold;background:#f4f6f7;}' +
+      '.cabecalho{border-bottom:2px solid #0f3d3e;padding-bottom:10px;margin-bottom:14px;}' +
+      '@media print{button{display:none;}}' +
+      '</style></head><body>' +
+      '<div class="cabecalho"><h1>' + dados.nomeEmpresa + '</h1><h2>Prestação de contas — Veículo ' + f.placa + '</h2>' +
+      '<p>Proprietário: <strong>' + f.nomeProprietario + '</strong> · Período: ' + dataInicioFmt + ' a ' + dataFimFmt + ' · Competência: ' + f.competencia + '</p></div>' +
+
+      '<h3>Receitas</h3><table>' +
+      '<tr><td>Receita bruta de fretes</td><td style="text-align:right;">' + formatarMoedaFrontend(f.receitaBrutaFretes) + '</td></tr>' +
+      '<tr><td>Receita de contratos por período</td><td style="text-align:right;">' + formatarMoedaFrontend(f.receitaContratos) + '</td></tr>' +
+      '<tr><td>Outras receitas</td><td style="text-align:right;">' + formatarMoedaFrontend(f.outrasReceitas) + '</td></tr>' +
+      '<tr class="total"><td>Receita total</td><td style="text-align:right;">' + formatarMoedaFrontend(f.receitaTotal) + '</td></tr>' +
+      '</table>' +
+
+      '<h3>Despesas dedutíveis do resultado</h3><table>' +
+      '<tr><td>Combustível</td><td style="text-align:right;">' + formatarMoedaFrontend(f.combustivel) + '</td></tr>' +
+      '<tr><td>Manutenção</td><td style="text-align:right;">' + formatarMoedaFrontend(f.manutencao) + '</td></tr>' +
+      '<tr><td>Motorista</td><td style="text-align:right;">' + formatarMoedaFrontend(f.motorista) + '</td></tr>' +
+      '<tr><td>Pedágio</td><td style="text-align:right;">' + formatarMoedaFrontend(f.pedagio) + '</td></tr>' +
+      '<tr><td>Despesas operacionais</td><td style="text-align:right;">' + formatarMoedaFrontend(f.despesasOperacionais) + '</td></tr>' +
+      '<tr><td>Despesas administrativas</td><td style="text-align:right;">' + formatarMoedaFrontend(f.despesasAdministrativas) + '</td></tr>' +
+      '<tr><td>Impostos/taxas</td><td style="text-align:right;">' + formatarMoedaFrontend(f.impostosTaxas) + '</td></tr>' +
+      '<tr><td>Comissão do motorista em viagens</td><td style="text-align:right;">' + formatarMoedaFrontend(f.comissaoMotoristaViagens) + '</td></tr>' +
+      '<tr><td>Salário do motorista (rateado)</td><td style="text-align:right;">' + formatarMoedaFrontend(f.salarioMotoristaVeiculo) + '</td></tr>' +
+      '<tr><td>Fundo de reserva retido</td><td style="text-align:right;">' + formatarMoedaFrontend(f.fundoReservaValor) + '</td></tr>' +
+      '<tr class="total"><td>Total de despesas</td><td style="text-align:right;">' + formatarMoedaFrontend(f.totalDespesas) + '</td></tr>' +
+      '</table>' +
+
+      '<h3>Resultado e divisão</h3><table>' +
+      '<tr class="total"><td>Resultado líquido distribuível</td><td style="text-align:right;">' + formatarMoedaFrontend(f.resultadoLiquidoDistribuivel) + '</td></tr>' +
+      '<tr><td>Parte do proprietário (' + f.percentualProprietario + '%)</td><td style="text-align:right;">' + formatarMoedaFrontend(f.valorProprietario) + '</td></tr>' +
+      '<tr><td>Parte da gestora (' + f.percentualGestora + '%)</td><td style="text-align:right;">' + formatarMoedaFrontend(f.valorGestora) + '</td></tr>' +
+      '</table>' +
+
+      '<h3>Dados para repasse</h3><table>' +
+      '<tr><td>Banco</td><td>' + (banco.banco || '-') + '</td></tr>' +
+      '<tr><td>Agência</td><td>' + (banco.agencia || '-') + '</td></tr>' +
+      '<tr><td>Conta</td><td>' + (banco.conta || '-') + '</td></tr>' +
+      '<tr><td>PIX</td><td>' + (banco.pix || '-') + '</td></tr>' +
+      '</table>' +
+
+      '<p style="font-size:12px;color:#5b6b6c;">Status do fechamento: ' + f.status + (f.observacoes ? ' · Observações: ' + f.observacoes : '') + '</p>' +
+      '<button onclick="window.print()" style="margin-top:16px;padding:10px 18px;background:#0f3d3e;color:#fff;border:none;border-radius:8px;cursor:pointer;">Imprimir / Salvar PDF</button>' +
+      '</body></html>';
+  }
+
+  /* ================= PRESTAÇÃO DE CONTAS POR VIAGEM ================= */
+
+  function renderizarPrestacaoContasViagem(dados, area) {
+    const v = dados.viagem;
+
+    const saidaFmt = v.dataSaida ? new Date(v.dataSaida).toLocaleString('pt-BR') : '-';
+    const chegadaFmt = v.dataChegada ? new Date(v.dataChegada).toLocaleString('pt-BR') : '-';
+
+    const linhasMemoria = dados.memoriaCalculo.map(function (m) {
+      const sinal = sinalMemoria(m);
+      return '<tr' + estiloLinhaMemoria(m) + '><td>' + m.origem + '</td><td>' + m.descricao + '</td><td>' + rotuloCategoriaMemoria(m) + '</td>' +
+        '<td style="text-align:right;">' + sinal + ' ' + formatarMoedaFrontend(m.valor) + '</td></tr>';
+    }).join('');
+
+    const corAlerta = dados.alertaRepasseTipo === 'ressarcimento' ? 'var(--cor-critico)'
+      : dados.alertaRepasseTipo === 'sobra' ? 'var(--cor-alerta)'
+      : dados.alertaRepasseTipo === 'ok' ? 'var(--cor-sucesso)'
+      : 'var(--cor-texto-suave)';
+
+    const bannerParcial = dados.parcial
+      ? '<div style="background:var(--cor-alerta-fundo);color:var(--cor-alerta);padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:10px;">⏳ PARCIAL — viagem ainda em andamento. Os valores abaixo são até agora e vão mudar até o encerramento.</div>'
+      : '';
+    const rotuloTempo = dados.parcial ? 'Tempo até agora' : 'Tempo total';
+    const rotuloChegada = dados.parcial ? 'Chegada' : 'Chegada';
+    const rotuloKm = dados.parcial ? 'Km rodados até agora (estimado)' : 'Km rodados';
+
+    area.innerHTML =
+      bannerParcial +
+      '<div class="painel" style="background:var(--cor-fundo);margin-top:14px;">' +
+        '<h4 style="margin-top:0;">Viagem ' + v.numeroViagem + ' — ' + v.placa + ' — ' + v.nomeMotorista + '</h4>' +
+        '<div class="form-grid" style="font-size:13px;">' +
+          '<div><strong>Cliente:</strong> ' + v.cliente + '</div>' +
+          '<div><strong>Rota:</strong> ' + v.origem + ' → ' + v.destino + '</div>' +
+          '<div><strong>Saída:</strong> ' + saidaFmt + '</div>' +
+          '<div><strong>' + rotuloChegada + ':</strong> ' + (dados.parcial ? 'ainda não chegou' : chegadaFmt) + '</div>' +
+          '<div><strong>' + rotuloTempo + ':</strong> ' + (v.duracaoFormatada || '-') + '</div>' +
+          '<div><strong>Km saída → chegada:</strong> ' + (v.kmSaida || '-') + ' → ' + (v.kmChegada || (dados.parcial ? 'em andamento' : '-')) + '</div>' +
+          '<div><strong>Km morto antes da viagem:</strong> ' + (v.kmMortoAntesViagem > 0 ? v.kmMortoAntesViagem.toLocaleString('pt-BR') + ' km (sem frete)' : '0 km') + '</div>' +
+          '<div><strong>' + rotuloKm + ':</strong> ' + Number(v.kmRodado || 0).toLocaleString('pt-BR') + ' km</div>' +
+          '<div><strong>Combustível (tração):</strong> ' + Number(dados.litrosCombustivelTracao || 0).toLocaleString('pt-BR') + ' L' + (dados.totalLitros > dados.litrosCombustivelTracao ? ' (+ ' + Number(dados.totalLitros - dados.litrosCombustivelTracao).toLocaleString('pt-BR') + ' L de ARLA/refrigeração, à parte)' : '') + '</div>' +
+          '<div><strong>Média da viagem:</strong> ' + (dados.mediaConsumoViagem ? dados.mediaConsumoViagem + ' km/l' : 'sem dados suficientes') + '</div>' +
+          '<div><strong>Status:</strong> ' + v.statusViagem + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="painel" style="background:var(--cor-fundo);margin-top:10px;">' +
+        '<div class="form-grid" style="font-size:13px;">' +
+          '<div><strong>Frete:</strong> ' + formatarMoedaFrontend(v.valorFrete) + '</div>' +
+          '<div><strong>Recebido do cliente:</strong> ' + formatarMoedaFrontend(v.recebidoCliente) + '</div>' +
+          '<div style="' + (v.saldoCliente > 0 ? 'color:var(--cor-alerta);font-weight:600;' : '') + '"><strong>Saldo a receber:</strong> ' + formatarMoedaFrontend(v.saldoCliente) + (v.saldoCliente <= 0 && v.valorFrete > 0 ? ' (quitado)' : '') + '</div>' +
+          '<div><strong>Comissão motorista:</strong> ' + (v.percentualMotorista > 0 ? v.percentualMotorista + '% (' + formatarMoedaFrontend(v.valorMotorista) + ')' : '-') + '</div>' +
+          '<div><strong>Adiantamento (pagamento):</strong> ' + formatarMoedaFrontend(v.adiantamentoMotorista) + '</div>' +
+          '<div><strong>Repasse operacional:</strong> ' + formatarMoedaFrontend(v.valorRepasseOperacional) + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<h4>Memória de cálculo (' + dados.memoriaCalculo.length + ' lançamentos)</h4>' +
+      '<div class="tabela-wrapper"><table class="tabela-simples"><thead><tr><th>Origem</th><th>Descrição</th><th>Categoria</th><th style="text-align:right;">Valor</th></tr></thead>' +
+      '<tbody>' + (linhasMemoria || '<tr><td colspan="4" style="color:var(--cor-texto-suave);">Nenhum lançamento encontrado.</td></tr>') + '</tbody></table></div>' +
+
+      '<div class="painel" style="background:var(--cor-fundo);margin-top:14px;">' +
+        '<table style="width:100%;font-size:13px;">' +
+          '<tr><td>Receita (frete)</td><td style="text-align:right;">' + formatarMoedaFrontend(dados.totalReceita) + '</td></tr>' +
+          '<tr><td>Total de despesas (comissão + despesas + combustível + manutenção)</td><td style="text-align:right;">' + formatarMoedaFrontend(dados.totalDespesas) + '</td></tr>' +
+          '<tr style="font-weight:700;"><td>Resultado líquido desta viagem</td><td style="text-align:right;">' + formatarMoedaFrontend(dados.resultadoLiquido) + '</td></tr>' +
+        '</table>' +
+      '</div>' +
+
+      '<div class="painel" style="background:var(--cor-fundo);margin-top:14px;border-left:4px solid ' + corAlerta + ';">' +
+        '<p style="margin:0;font-size:13px;"><strong>Repasse operacional:</strong> ' + formatarMoedaFrontend(v.valorRepasseOperacional) + ' entregue · ' + formatarMoedaFrontend(dados.gastoTotalMotorista) + ' gasto USANDO O REPASSE (só os lançamentos marcados como "pago com repasse")</p>' +
+        '<p style="margin:6px 0 0;font-size:13px;color:' + corAlerta + ';font-weight:600;">' + dados.alertaRepasse + '</p>' +
+      '</div>' +
+
+      '<div class="form-acoes">' +
+        '<button type="button" class="btn btn-secundario" id="btn-imprimir-prestacao-viagem">Imprimir / Salvar PDF</button>' +
+      '</div>';
+
+    area.querySelector('#btn-imprimir-prestacao-viagem').addEventListener('click', function () {
+      imprimirPrestacaoContasViagem(dados);
+    });
+  }
+
+  function imprimirPrestacaoContasViagem(dados) {
+    const v = dados.viagem;
+    const linhasMemoria = dados.memoriaCalculo.map(function (m) {
+      const sinal = sinalMemoria(m);
+      return '<tr' + estiloLinhaMemoria(m) + '><td>' + m.origem + '</td><td>' + m.descricao + '</td><td>' + rotuloCategoriaMemoria(m) + '</td><td style="text-align:right;">' + sinal + ' ' + formatarMoedaFrontend(m.valor) + '</td></tr>';
+    }).join('');
+
+    const win = window.open('', '_blank');
+    win.document.write(
+      '<html><head><title>Prestação de contas — ' + v.numeroViagem + '</title>' +
+      '<style>body{font-family:Arial,sans-serif;padding:24px;color:#222;} h1{font-size:18px;} h3{margin-top:20px;border-bottom:1px solid #ccc;padding-bottom:4px;}' +
+      'table{width:100%;border-collapse:collapse;margin-top:8px;} td,th{padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:left;}' +
+      '.total{font-weight:700;} .alerta{padding:10px;border-radius:6px;background:#fff3e0;margin-top:14px;}</style></head><body>' +
+      '<h1>Prestação de contas — Viagem ' + v.numeroViagem + '</h1>' +
+      '<p>Placa: ' + v.placa + ' · Motorista: ' + v.nomeMotorista + ' · Cliente: ' + v.cliente + '</p>' +
+      '<p>Rota: ' + v.origem + ' → ' + v.destino + '</p>' +
+      '<p>Saída: ' + (v.dataSaida ? new Date(v.dataSaida).toLocaleString('pt-BR') : '-') + ' · Chegada: ' + (v.dataChegada ? new Date(v.dataChegada).toLocaleString('pt-BR') : '-') + ' · Tempo total: ' + (v.duracaoFormatada || '-') + '</p>' +
+      '<p>Km: ' + (v.kmSaida || '-') + ' → ' + (v.kmChegada || '-') + ' (' + Number(v.kmRodado || 0).toLocaleString('pt-BR') + ' km rodados)</p>' +
+      '<p>Combustível (tração): ' + Number(dados.litrosCombustivelTracao || 0).toLocaleString('pt-BR') + ' L · Média da viagem: ' + (dados.mediaConsumoViagem ? dados.mediaConsumoViagem + ' km/l' : 'sem dados suficientes') + '</p>' +
+
+      '<h3>Financeiro</h3><table>' +
+      '<tr><td>Frete</td><td>' + formatarMoedaFrontend(v.valorFrete) + '</td></tr>' +
+      '<tr><td>Recebido do cliente</td><td>' + formatarMoedaFrontend(v.recebidoCliente) + '</td></tr>' +
+      '<tr><td>Saldo a receber do cliente</td><td>' + formatarMoedaFrontend(v.saldoCliente) + '</td></tr>' +
+      '<tr><td>Comissão motorista</td><td>' + (v.percentualMotorista > 0 ? v.percentualMotorista + '% — ' + formatarMoedaFrontend(v.valorMotorista) : '-') + '</td></tr>' +
+      '<tr><td>Adiantamento (pagamento)</td><td>' + formatarMoedaFrontend(v.adiantamentoMotorista) + '</td></tr>' +
+      '<tr><td>Repasse operacional</td><td>' + formatarMoedaFrontend(v.valorRepasseOperacional) + '</td></tr>' +
+      '</table>' +
+
+      '<h3>Memória de cálculo (' + dados.memoriaCalculo.length + ' lançamentos)</h3>' +
+      '<table><tr><th>Origem</th><th>Descrição</th><th>Categoria</th><th>Valor</th></tr>' + linhasMemoria + '</table>' +
+
+      '<h3>Resultado</h3><table>' +
+      '<tr><td>Receita (frete)</td><td>' + formatarMoedaFrontend(dados.totalReceita) + '</td></tr>' +
+      '<tr><td>Total de despesas</td><td>' + formatarMoedaFrontend(dados.totalDespesas) + '</td></tr>' +
+      '<tr class="total"><td>Resultado líquido</td><td>' + formatarMoedaFrontend(dados.resultadoLiquido) + '</td></tr>' +
+      '</table>' +
+
+      '<div class="alerta"><strong>Repasse operacional:</strong> ' + formatarMoedaFrontend(v.valorRepasseOperacional) + ' entregue · ' + formatarMoedaFrontend(dados.gastoTotalMotorista) + ' gasto USANDO O REPASSE (só os lançamentos marcados como "pago com repasse")<br>' + dados.alertaRepasse + '</div>' +
+
+      '<button onclick="window.print()" style="margin-top:16px;padding:10px 18px;background:#0f3d3e;color:#fff;border:none;border-radius:8px;cursor:pointer;">Imprimir / Salvar PDF</button>' +
+      '</body></html>'
+    );
+    win.document.close();
+  }
+</script>
+          </section>
+
+        </main>
+      </div>
+
+      <div id="modal-overlay" class="modal-overlay oculto">
+        <div class="modal-caixa">
+          <div class="modal-cabecalho">
+            <h3 id="modal-titulo">Título</h3>
+            <button class="icon-btn" id="modal-fechar" aria-label="Fechar"><i data-lucide="x"></i></button>
+          </div>
+          <div class="modal-corpo" id="modal-corpo"></div>
+        </div>
+      </div>
+    </div>
+
+</body>
+</html>
